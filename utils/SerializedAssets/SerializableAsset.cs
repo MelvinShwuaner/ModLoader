@@ -62,6 +62,10 @@ namespace NeoModLoader.utils.SerializedAssets
                 {
                     return Convert.ToSingle(Value);
                 }
+                else if(Type == typeof(Enum))
+                {
+                    return Enum.ToObject(Type, Convert.ToInt32(Value));
+                }
                 else if (Value is JObject JObject)
                 {
                     return JObject.ToObject(Type);
