@@ -31,9 +31,16 @@ public class WorldBoxMod : MonoBehaviour
     private bool initialized = false;
     private bool initialized_successfully = false;
 
-    [HarmonyPatch(typeof(Assembly), nameof(Assembly.LoadFrom), typeof(string))]
-    [HarmonyReversePatch]
-    private static Assembly LoadFrom(string path) => throw new NotImplementedException();
+    private static void UnityExplorerFix() {
+        Harmony harmony = new Harmony(Others.harmony_id);
+        MethodInfo original = AccessTools.Method(typeof(Assembly), nameof(Assembly.LoadFrom), new[] { typeof(string) });
+        MethodInfo standin = AccessTools.Method(typeof(WorldBoxMod), nameof(LoadFrom));
+        ReversePatcher reversePatcher = harmony.CreateReversePatcher(original, new HarmonyMethod(standin));
+
+        reversePatcher.Patch();
+    }
+
+    private static Assembly LoadFrom(string path) => Assembly.LoadFrom(path);
 
     private void Start()
     {
@@ -46,7 +53,10 @@ public class WorldBoxMod : MonoBehaviour
 
         LogService.Init();
 
-        Harmony.CreateAndPatchAll(typeof(WorldBoxMod), Others.harmony_id);
+        if (ReflectionHelper.IsAssemblyLoaded("0Harmony")) {
+            UnityExplorerFix();
+        }
+
         fileSystemInitialize();
         LogService.LogInfo($"NeoModLoader Version: {InternalResourcesGetter.GetCommit()}");
     }
