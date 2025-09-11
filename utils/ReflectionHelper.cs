@@ -7,6 +7,10 @@ namespace NeoModLoader.utils;
 
 internal static class ReflectionHelper
 {
+    internal static bool IsAssemblyLoaded(string assembly_name) {
+        return AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetName().Name.Equals(assembly_name));
+    }
+
     internal static Delegate GetMethod<T>(string method_name, bool is_static = false)
     {
         return createMethodDelegate(is_static
