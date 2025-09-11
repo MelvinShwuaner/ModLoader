@@ -155,7 +155,7 @@ namespace NeoModLoader.utils.Builders
                 bool tHasTag = Asset.base_stats.hasTags();
                 bool tHasPlot = !string.IsNullOrEmpty(Asset.plot_id);
                 int tCount = 0;
-                if (Asset.action_death != null || Asset.action_special_effect != null || Asset.action_get_hit != null || Asset.action_birth != null || Asset.action_attack_target != null || Asset.action_on_add != null || Asset.action_on_remove != null || Asset.action_on_load != null)
+                if (Asset.action_death != null || Asset.action_special_effect != null || Asset.action_get_hit != null || Asset.action_birth != null || Asset.action_attack_target != null || Asset.action_on_augmentation_add != null || Asset.action_on_augmentation_remove != null || Asset.action_on_augmentation_load != null)
                 {
                     tCount++;
                 }

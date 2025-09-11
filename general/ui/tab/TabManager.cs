@@ -24,7 +24,7 @@ public static class TabManager
         CanvasMain.instance.canvas_ui.transform.Find("CanvasBottom/BottomElements/BottomElementsMover/TabsButtons");
 
     private static readonly Transform tab_container = CanvasMain.instance.canvas_ui.transform.Find(
-        "CanvasBottom/BottomElements/BottomElementsMover/CanvasScrollView/Scroll View/Viewport/Content/buttons");
+        "CanvasBottom/BottomElements/BottomElementsMover/CanvasScrollView/Scroll View/Viewport/Content/Power Tabs");
 
     private static readonly List<Button>
         tab_entries = new(PowerTabController.instance._buttons); // To avoid other mods' modifies

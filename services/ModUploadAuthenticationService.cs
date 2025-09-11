@@ -98,7 +98,7 @@ public static class ModUploadAuthenticationService
                         var auth_task =
                             new Task<bool>(ModUploadAuthenticationWindow.Instance.AuthFunc, cancel_token.Token);
 
-                        ModUploadAuthenticationWindow.SetText(LM.Get("NML_AUTHENTICATION_WAITING"));
+                        ModUploadAuthenticationWindow.SetText(LM.Get("nml_authentication_waiting"));
 
                         auth_task.Start();
                         var time = 0;

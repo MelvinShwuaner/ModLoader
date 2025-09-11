@@ -70,7 +70,7 @@ internal class ModUploadAuthenticationWindow : AbstractWindow<ModUploadAuthentic
         auth_text.resizeTextMaxSize = 14;
         auth_text.color = Color.white;
         localized_auth_text = auth_text_obj.GetComponent<LocalizedText>();
-        localized_auth_text.setKeyAndUpdate("NML_AUTHENTICATION");
+        localized_auth_text.setKeyAndUpdate("nml_authentication");
         LocalizedTextManager.addTextField(localized_auth_text);
 
 
@@ -140,7 +140,7 @@ internal class ModUploadAuthenticationWindow : AbstractWindow<ModUploadAuthentic
     public static void SetState(bool pAuthState, string pTipText = null)
     {
         Instance.auth_text.color = pAuthState ? Color.green : Color.red;
-        Instance.localized_auth_text.setKeyAndUpdate(pAuthState ? "NML_AUTHENTICATED" : "NML_AUTHENTICATION_FAILED");
+        Instance.localized_auth_text.setKeyAndUpdate(pAuthState ? "nml_authenticated" : "nml_authentication_failed");
 
         if (!string.IsNullOrEmpty(pTipText))
         {

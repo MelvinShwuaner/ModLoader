@@ -267,8 +267,21 @@ public class ModListWindow : AbstractListWindow<ModListWindow, IMod>
                 mod_desc = LM.Get(multilang_mod_desc_key);
             }
 
-            text.text = $"{mod_name}\t{mod_declare.Version}\n{mod_author}\n{mod_desc}";
+            switch (mod_declare.ModType)
+            {
 
+                case ModTypeEnum.NEOMOD:
+                case ModTypeEnum.COMPILED_NEOMOD:
+                case ModTypeEnum.RESOURCE_PACK:
+                    text.text = $"{mod_name}\t{mod_declare.Version}\n{mod_author}\n{mod_desc}";
+                    break;
+                case ModTypeEnum.BEPINEX:
+                    text.text = $"[BepInEx] {mod_name}\t{mod_declare.Version}\n{mod_author}\n{mod_desc}";
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+            
             Sprite sprite = null;
             if (!string.IsNullOrEmpty(mod_declare.IconPath) &&
                 File.Exists(Path.Combine(mod_declare.FolderPath, mod_declare.IconPath)))
