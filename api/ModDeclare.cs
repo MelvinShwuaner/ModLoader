@@ -115,6 +115,7 @@ public class ModDeclare
         IncompatibleWith = modDeclare.IncompatibleWith;
         ModType = modDeclare.ModType;
         UsePublicizedAssembly = modDeclare.UsePublicizedAssembly;
+        RepoUrl = modDeclare.RepoUrl;
 
         Dependencies ??= Array.Empty<string>();
         OptionalDependencies ??= Array.Empty<string>();
