@@ -207,7 +207,7 @@ public static class PowerButtonCreator
 
             _option.boolVal = !_option.boolVal;
             if (_option.boolVal && power.map_modes_switch)
-                AssetManager.powers.disableAllOtherMapModes(pPower);
+                PowerLibrary.disableAllOtherMapModes(pPower);
             PlayerConfig.saveData();
         }
 
@@ -235,7 +235,7 @@ public static class PowerButtonCreator
             });
         }
 
-        var prefab = ResourcesFinder.FindResource<PowerButton>("kings_and_leaders");
+        var prefab = ResourcesFinder.FindResource<PowerButton>("map_kings_leaders");
 
         bool found_active = prefab.gameObject.activeSelf;
         if (found_active)
@@ -279,7 +279,7 @@ public static class PowerButtonCreator
     {
         if (string.IsNullOrEmpty(pId)) return null;
         Transform tabTransform = CanvasMain.instance.canvas_ui.transform.Find(
-            $"CanvasBottom/BottomElements/BottomElementsMover/CanvasScrollView/Scroll View/Viewport/Content/buttons/{pId}");
+            $"CanvasBottom/BottomElements/BottomElementsMover/CanvasScrollView/Scroll View/Viewport/Content/Power Tabs/{pId}");
 
         return tabTransform == null ? null : tabTransform.GetComponent<PowersTab>();
     }

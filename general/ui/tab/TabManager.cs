@@ -24,7 +24,7 @@ public static class TabManager
         CanvasMain.instance.canvas_ui.transform.Find("CanvasBottom/BottomElements/BottomElementsMover/TabsButtons");
 
     private static readonly Transform tab_container = CanvasMain.instance.canvas_ui.transform.Find(
-        "CanvasBottom/BottomElements/BottomElementsMover/CanvasScrollView/Scroll View/Viewport/Content/buttons");
+        "CanvasBottom/BottomElements/BottomElementsMover/CanvasScrollView/Scroll View/Viewport/Content/Power Tabs");
 
     private static readonly List<Button>
         tab_entries = new(PowerTabController.instance._buttons); // To avoid other mods' modifies
@@ -399,10 +399,20 @@ public static class TabManager
         tab_entry.transform.Find("Icon").GetComponent<Image>().sprite = pIcon;
 
         PowersTab tab = Object.Instantiate(
-            ResourcesFinder.FindResources<GameObject>("Tab_Other")[0].GetComponent<PowersTab>(),
+            ResourcesFinder.FindResources<GameObject>(PowerTabNames.Creatures).Select(tgo => tgo.GetComponent<PowersTab>()).First(t => t != null),
             tab_container);
 
-        tab.name = "Tab_" + name;
+        tab.name = name;
+
+        var asset = new PowerTabAsset
+        {
+            id = name,
+            locale_key = pTitleKey,
+            tab_type_main = true,
+            get_power_tab = () => tab
+        };
+        AssetManager.power_tab_library.add(asset);
+        tab._asset = asset;
 
         Button tab_entry_button = tab_entry.GetComponent<Button>();
         tab_entry_button.onClick = new Button.ButtonClickedEvent();
@@ -414,9 +424,9 @@ public static class TabManager
         tab_entry_tip.textOnClickDescription = pDescKey;
         tab_entry_tip.text_description_2 = pOptionDescKey;
         // Clear tab content
-        for (int i = 7; i < tab.transform.childCount; i++)
+        for (int i = 6; i < tab.transform.childCount; i++)
         {
-            GameObject.Destroy(tab.transform.GetChild(i).gameObject);
+            Object.Destroy(tab.transform.GetChild(i).gameObject);
         }
 
         tab._power_buttons.Clear();

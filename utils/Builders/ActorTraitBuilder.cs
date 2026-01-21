@@ -32,7 +32,7 @@ namespace NeoModLoader.utils.Builders
         public ActorTraitBuilder(string ID, string CopyFrom) : base(ID, CopyFrom) { }
         void LinkWithLibrary()
         {
-            if (Asset.combat)
+            if (Asset.in_training_dummy_combat_pot)
             {
                 Library.pot_traits_combat.Add(Asset);
             }
@@ -93,7 +93,7 @@ namespace NeoModLoader.utils.Builders
         /// <summary>
         /// if true, this actor trait represents a combat skill, and actors could try to gain this trait
         /// </summary>
-        public bool IsCombatSkill { get { return Asset.combat; } set { Asset.combat = value; } }
+        public bool IsCombatSkill { get { return Asset.in_training_dummy_combat_pot; } set { Asset.in_training_dummy_combat_pot = value; } }
         /// <summary>
         /// if true, the base stats of this trait will only be applied to the actor in the age of dark
         /// </summary>

@@ -74,15 +74,15 @@
         /// <summary>
         /// The Action Performed on something, when this asset is added to it!
         /// </summary>
-        public WorldActionTrait ActionWhenAdded { get { return Asset.action_on_add; } set { Asset.action_on_add = value; } }
+        public WorldActionTrait ActionWhenAdded { get { return Asset.action_on_augmentation_add; } set { Asset.action_on_augmentation_add = value; } }
         /// <summary>
         /// The Action Performed on something, when this asset is removed from it!
         /// </summary>
-        public WorldActionTrait ActionWhenRemoved { get { return Asset.action_on_remove; } set { Asset.action_on_remove = value; } }
+        public WorldActionTrait ActionWhenRemoved { get { return Asset.action_on_augmentation_remove; } set { Asset.action_on_augmentation_remove = value; } }
         /// <summary>
         /// The Action Performed on something with this asset, when that something is loaded from a save file
         /// </summary>
-        public WorldActionTrait ActionOnLoad { get { return Asset.action_on_load; } set { Asset.action_on_load = value; } }
+        public WorldActionTrait ActionOnLoad { get { return Asset.action_on_augmentation_load; } set { Asset.action_on_augmentation_load = value; } }
         /// <summary>
         /// The Action Performed on something, this keeps happening until that something is destroyed or this is removed
         /// </summary>

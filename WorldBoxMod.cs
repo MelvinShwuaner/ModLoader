@@ -31,6 +31,17 @@ public class WorldBoxMod : MonoBehaviour
     private bool initialized = false;
     private bool initialized_successfully = false;
 
+    private static void UnityExplorerFix() {
+        Harmony harmony = new Harmony(Others.harmony_id);
+        MethodInfo original = AccessTools.Method(typeof(Assembly), nameof(Assembly.LoadFrom), new[] { typeof(string) });
+        MethodInfo standin = AccessTools.Method(typeof(WorldBoxMod), nameof(LoadFrom));
+        ReversePatcher reversePatcher = harmony.CreateReversePatcher(original, new HarmonyMethod(standin));
+
+        reversePatcher.Patch();
+    }
+
+    private static Assembly LoadFrom(string path) => Assembly.LoadFrom(path);
+
     private void Start()
     {
         Others.unity_player_enabled = true;
@@ -41,6 +52,11 @@ public class WorldBoxMod : MonoBehaviour
         InactiveTransform.gameObject.SetActive(false);
 
         LogService.Init();
+
+        if (ReflectionHelper.IsAssemblyLoaded("0Harmony")) {
+            UnityExplorerFix();
+        }
+
         fileSystemInitialize();
         LogService.LogInfo($"NeoModLoader Version: {InternalResourcesGetter.GetCommit()}");
     }
@@ -287,7 +303,7 @@ public class WorldBoxMod : MonoBehaviour
         {
             try
             {
-                Assembly.LoadFrom(file_full_path);
+                LoadFrom(file_full_path);
             }
             catch (BadImageFormatException)
             {
