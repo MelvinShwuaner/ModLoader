@@ -134,6 +134,7 @@ public class CustomAudioManager
         {
             return true;
         }
+        pSoundPath = pSoundPath.ToLower();
         if (!AudioWavLibrary.ContainsKey(pSoundPath)) return true;
         LoadCustomSound(pSoundPath, pX, pY);
         return false;
@@ -147,6 +148,7 @@ public class CustomAudioManager
         {
             return true;
         }
+        pSoundPath = pSoundPath.ToLower();
         if (!AudioWavLibrary.ContainsKey(pSoundPath)) return true;
         LoadDrawingSound(pSoundPath, pX, pY);
         return false;
@@ -232,6 +234,7 @@ public class CustomAudioManager
     /// </summary>
     public static void ModifyWavData(string ID, float Volume, SoundMode Mode, int LoopCount = 0, bool Ramp = false, SoundType Type = SoundType.Sound)
     {
+        ID = ID.ToLower();
         if (!AudioWavLibrary.ContainsKey(ID))
         {
             return;

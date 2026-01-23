@@ -3,14 +3,14 @@
     /// <summary>
     /// a serializable item asset, including culture traits which have it and its type
     /// </summary>
-    public class SerializedItemAsset : SerializableAsset<ItemAsset>
+    public class SerializedItemAsset : SerializableAsset<EquipmentAsset>
     {
         internal string[] CultureTraitsThisItemIsIn;
         internal string[] CultureTraitsThisItemsTypeIsIn;
         /// <summary>
         /// Converts the item asset to a serializable version
         /// </summary>
-        public static SerializedItemAsset FromAsset(ItemAsset Asset, IEnumerable<string> cultureTraitsItem = null, IEnumerable<string> cultureTraitsType = null)
+        public static SerializedItemAsset FromAsset(EquipmentAsset Asset, IEnumerable<string> cultureTraitsItem = null, IEnumerable<string> cultureTraitsType = null)
         {
             SerializedItemAsset asset = new();
             Serialize(Asset, asset);
@@ -27,9 +27,9 @@
         /// <summary>
         /// Converts the serializable version to a actor trait asset
         /// </summary>
-        public static ItemAsset ToAsset(SerializedItemAsset Asset)
+        public static EquipmentAsset ToAsset(SerializedItemAsset Asset)
         {
-            ItemAsset asset = new();
+            EquipmentAsset asset = new();
             Deserialize(Asset, asset);
             return asset;
         }

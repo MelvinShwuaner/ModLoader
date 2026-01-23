@@ -84,11 +84,11 @@ public static class ResourcesPatch
     }
     static Builder LoadAsset(string Path, string Extention) => Extention switch
     {
-        //"actorasset" => new ActorAssetBuilder(Path, false),
+        //".actorasset" => new ActorAssetBuilder(Path, false),
         ".actortraitasset" => new ActorTraitBuilder(Path, false),
         ".subspeciestraitasset" => new SubspeciesTraitBuilder(Path, false),
-        //".itemasset" => new ItemBuilder(Path, false), // had to comment out because whatever generics system melvin set up for this broke and I don't have time to look into it
-        //".itemmodifierasset" => new ItemModifierBuilder(Path, false), // same issue as above
+        ".itemasset" => new ItemBuilder(Path, false), // shhhhhhhhhhhhh
+        ".itemmodifierasset" => new ItemModifierBuilder(Path, false), // same issue as above
         ".clantraitasset" => new ClanTraitBuilder(Path, false),
         ".culturetraitasset" => new CultureTraitBuilder(Path, false),
         ".actortraitgroupasset" => new GroupAssetBuilder<ActorTraitGroupAsset>(Path, false),
@@ -102,31 +102,31 @@ public static class ResourcesPatch
         ".religiontraitgroupasset" => new GroupAssetBuilder<ReligionTraitGroupAsset>(Path, false),
         ".subspeciestraitgroupasset" => new GroupAssetBuilder<SubspeciesTraitGroupAsset>(Path, false),
         ".worldlawgroupasset" => new GroupAssetBuilder<WorldLawGroupAsset>(Path, false),
+        ".phenotypeasset" => new PhenotypeBuilder(Path, false),
         _ => throw new NotSupportedException($"the asset {Extention} has not been supported yet!"),
     };
     /// <summary>
     /// doesnt return anything, simply adds the wav to the wav library that contains all the custom sounds
     /// </summary>
-    private static void LoadWavFile(string path)
+    private static void LoadWavFile(string abspath, string path)
     {
-        string Name = Path.GetFileNameWithoutExtension(path);
-        if (CustomAudioManager.AudioWavLibrary.ContainsKey(Name))
+        if (CustomAudioManager.AudioWavLibrary.ContainsKey(path))
         {
-            LogService.LogError($"The Sound file {Name} has already been loaded!");
+            LogService.LogError($"The Sound file {path} has already been loaded!");
             return;
         }
         WavContainer container;
         try
         {
             container = JsonConvert.DeserializeObject<WavContainer>(
-                File.ReadAllText(Path.GetDirectoryName(path) + "/" + Name + ".json"));
-            container.Path = path;
+                File.ReadAllText(Path.GetDirectoryName(abspath) + "/" + Path.GetFileNameWithoutExtension(abspath) + ".json"));
+            container.Path = abspath;
         }
         catch (Exception)
         {
-            container = new WavContainer(path, SoundMode.Stereo3D, 50f);
+            container = new WavContainer(abspath, SoundMode.Stereo3D, 50f);
         }
-        CustomAudioManager.AudioWavLibrary.Add(Name, container);
+        CustomAudioManager.AudioWavLibrary.Add(path, container);
     }
 
     private static TextAsset LoadTextAsset(string path)
@@ -359,10 +359,10 @@ public static class ResourcesPatch
             if (lower_path.EndsWith(".meta") || lower_path.EndsWith("sprites.json")) return;
             if (lower_path.EndsWith(".wav"))
             {
-                LoadWavFile(absPath);
+                LoadWavFile(absPath, lower_path.Replace(".wav", ""));
                 return;
             }
-            if (lower_path.EndsWith("asset"))
+            if (Path.GetExtension(lower_path).EndsWith("asset"))
             {
                 Builder = LoadAsset(absPath, Path.GetExtension(lower_path));
                 return;

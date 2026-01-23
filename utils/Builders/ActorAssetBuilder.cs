@@ -2,7 +2,6 @@
 {
     /// <summary>
     /// A Builder to create Actor Assets
-    /// NOT FINUSHED!!!!!!!!!!!!!!!!!!!!
     /// </summary>
     public sealed class ActorAssetBuilder : UnlockableAssetBuilder<ActorAsset, ActorAssetLibrary>
     {

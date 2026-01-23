@@ -14,13 +14,6 @@ namespace NeoModLoader.utils.SerializedAssets
         /// </summary>
         public Dictionary<string, object> Variables = new();
         /// <summary>
-        /// the delegates of the asset
-        /// </summary>
-        /// <remarks>
-        /// the way it stores delegates is that it stores their name, the path to their class, and then searches the assembly for a matching delegate
-        /// </remarks>
-        public Dictionary<string, string> Delegates = new();
-        /// <summary>
         /// takes delegates and variables from an asset and takes them to a serializable asset
         /// </summary>
         public static void Serialize(A Asset, SerializableAsset<A> asset)
@@ -30,7 +23,7 @@ namespace NeoModLoader.utils.SerializedAssets
                 object Value = field.GetValue(Asset);
                 if (Value is Delegate value)
                 {
-                    asset.Delegates.Add(field.Name, value.AsString(false));
+                    asset.Variables.Add(field.Name, value.AsString(false));
                 }
                 else
                 {
@@ -54,6 +47,10 @@ namespace NeoModLoader.utils.SerializedAssets
         {
             static object GetRealValueOfObject(object Value, Type Type)
             {
+                if (typeof(Delegate).IsAssignableFrom(Type))
+                {
+                    return (Value as string).AsDelegate(Type);
+                }
                 if (Type == typeof(int))
                 {
                     return Convert.ToInt32(Value);
@@ -74,14 +71,7 @@ namespace NeoModLoader.utils.SerializedAssets
             }
             foreach (FieldInfo field in typeof(A).GetFields())
             {
-                if (typeof(Delegate).IsAssignableFrom(field.FieldType))
-                {
-                    if (Asset.Delegates.TryGetValue(field.Name, out string Delegate))
-                    {
-                        field.SetValue(asset, Delegate.AsDelegate(field.FieldType));
-                    }
-                }
-                else if (Asset.Variables.TryGetValue(field.Name, out object Value))
+                if (Asset.Variables.TryGetValue(field.Name, out object Value))
                 {
                     field.SetValue(asset, GetRealValueOfObject(Value, field.FieldType));
                 }

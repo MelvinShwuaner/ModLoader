@@ -33,6 +33,28 @@ namespace NeoModLoader.utils.Builders
             SerializableAsset<A> assetSerialized = JsonConvert.DeserializeObject<SerializableAsset<A>>(File.ReadAllText(FilePathToBuild));
             Asset = SerializableAsset<A>.ToAsset(assetSerialized);
         }
+        /// <summary>
+        /// saves asset
+        /// </summary>
+        protected virtual void SaveToPath(string FilePath)
+        {
+            SerializableAsset<A> assetSerialized = SerializableAsset<A>.FromAsset(Asset);
+            File.WriteAllText(FilePath, JsonConvert.SerializeObject(assetSerialized));
+        }
+        /// <summary>
+        /// Saves the asset to a file path for use later
+        /// </summary>
+        public void SaveAsset(string FilePath)
+        {
+            try
+            {
+                SaveToPath(FilePath);
+            }
+            catch
+            {
+                LogService.LogError($"the asset could not be saved");
+            }
+        }
         void LoadAssetFromPath(string FilePathToBuild)
         {
             try

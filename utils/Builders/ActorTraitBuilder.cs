@@ -27,6 +27,12 @@ namespace NeoModLoader.utils.Builders
             Asset = SerializedActorTrait.ToAsset(assetSerialized);
         }
         /// <inheritdoc/>
+        protected override void SaveToPath(string FilePath)
+        {
+            SerializedActorTrait assetSerialized = SerializedActorTrait.FromAsset(Asset);
+            File.WriteAllText(FilePath, JsonConvert.SerializeObject(assetSerialized));
+        }
+        /// <inheritdoc/>
         public ActorTraitBuilder(string ID, bool LoadImmediately) : base(ID, LoadImmediately) { }
         /// <inheritdoc/>
         public ActorTraitBuilder(string ID, string CopyFrom) : base(ID, CopyFrom) { }

@@ -3,7 +3,7 @@
     /// <summary>
     /// A builder for building unlockable assets
     /// </summary>
-    public class UnlockableAssetBuilder<A, AL> : AssetBuilder<A, AL> where A : BaseUnlockableAsset, new() where AL : BaseLibraryWithUnlockables<A>
+    public class UnlockableAssetBuilder<A, AL> : AssetBuilder<A, AL> where A : BaseUnlockableAsset, new() where AL : AssetLibrary<A>
     {
         /// <inheritdoc/>
         public UnlockableAssetBuilder(string ID) : base(ID) { BaseStats = new BaseStats(); }

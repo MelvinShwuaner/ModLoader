@@ -8,7 +8,7 @@ namespace NeoModLoader.utils.Builders
     /// <summary>
     ///  A Builder to build items
     /// </summary>
-    /*public sealed class ItemBuilder : AugmentationAssetBuilder<ItemAsset, ItemLibrary> // congrats melvin, your ItemBuilder broke on a fundamental level within 1 singular update of existing somehow, I am under severe time pressure rn and cannot be bothered to look into the cause so have fun whenever you see this Ig
+    public sealed class ItemBuilder : AugmentationAssetBuilder<EquipmentAsset, ItemLibrary> // shut up key
     {
         static string GetEquipmentType(EquipmentType pType) => pType switch
         {
@@ -34,6 +34,14 @@ namespace NeoModLoader.utils.Builders
             }
         }
         /// <inheritdoc/>
+        protected override void SaveToPath(string FilePath)
+        {
+            SerializedItemAsset assetSerialized = SerializedItemAsset.FromAsset(Asset);
+            assetSerialized.CultureTraitsThisItemIsIn = CultureTraitsThisWeaponIsIn.ToArray();
+            assetSerialized.CultureTraitsThisItemsTypeIsIn = CultureTraitsThisWeaponsTypeIsIn.ToArray();
+            File.WriteAllText(FilePath, JsonConvert.SerializeObject(assetSerialized));
+        }
+        /// <inheritdoc/>
         protected override void LoadFromPath(string FilePathToBuild)
         {
             SerializedItemAsset assetSerialized = JsonConvert.DeserializeObject<SerializedItemAsset>(File.ReadAllText(FilePathToBuild));
@@ -42,9 +50,9 @@ namespace NeoModLoader.utils.Builders
             CultureTraitsThisWeaponsTypeIsIn = assetSerialized.CultureTraitsThisItemsTypeIsIn;
         }
         /// <inheritdoc/>
-        protected override ItemAsset CreateAsset(string ID)
+        protected override EquipmentAsset CreateAsset(string ID)
         {
-            ItemAsset asset =  new()
+            EquipmentAsset asset =  new()
             {
                 id = ID,
                 group_id = "sword",
@@ -78,11 +86,11 @@ namespace NeoModLoader.utils.Builders
             }
             if (Asset.item_modifier_ids != null)
             {
-                Asset.item_modifiers = new ItemAsset[Asset.item_modifier_ids.Length];
+                Asset.item_modifiers = new ItemModAsset[Asset.item_modifier_ids.Length];
                 for (int i = 0; i < Asset.item_modifier_ids.Length; i++)
                 {
                     string tModID = Asset.item_modifier_ids[i];
-                    ItemAsset tModData = AssetManager.items_modifiers.get(tModID);
+                    ItemModAsset tModData = AssetManager.items_modifiers.get(tModID);
                     if (tModData == null)
                     {
                         BaseAssetLibrary.logAssetError("ItemLibrary: Item Modifier Asset <e>not found</e>", tModID);
@@ -112,7 +120,6 @@ namespace NeoModLoader.utils.Builders
             {
                 Localize(Asset.getLocaleID(), Description);
             }
-            AddWeaponsSprite();
             LinkWithLibrary();
             if (UnlockedByDefault)
             {
@@ -122,42 +129,32 @@ namespace NeoModLoader.utils.Builders
         }
         void LinkWithLibrary()
         {
-            if (!Library.equipment_by_subtypes.ContainsKey(Asset.equipment_subtype))
-            {
-                Library.equipment_by_subtypes.Add(Asset.equipment_subtype, new List<ItemAsset>());
-            }
-            Library.equipment_by_subtypes[Asset.equipment_subtype].Add(Asset);
             if (Asset.is_pool_weapon)
             {
-                Library.pool_weapon_assets_all.Add(Asset);
+                Asset.path_gameplay_sprite = "items/weapons/w_" + Asset.id;
             }
-            if (!Asset.is_pool_weapon)
+            if (string.IsNullOrEmpty(Asset.path_icon))
             {
-                string tGroupId = Asset.group_id;
-                if (!Library.equipment_by_groups_all.ContainsKey(tGroupId))
+                Asset.path_icon = "ui/Icons/items/icon_" + Asset.id;
+                int tResourcesGoldCostResources = 0;
+                if (Asset.cost_resource_id_1 != "none")
                 {
-                    Library.equipment_by_groups_all.Add(tGroupId, new List<ItemAsset>());
+                    ResourceAsset tResource = AssetManager.resources.get(Asset.cost_resource_id_1);
+                    tResourcesGoldCostResources += tResource.money_cost;
                 }
-                Library.equipment_by_groups_all[tGroupId].Add(Asset);
+                if (Asset.cost_resource_id_2 != "none")
+                {
+                    ResourceAsset tResource2 = AssetManager.resources.get(Asset.cost_resource_id_2);
+                    tResourcesGoldCostResources += tResource2.money_cost;
+                }
+                Asset.cost_coins_resources = tResourcesGoldCostResources;
             }
-            if (Asset.isUnlocked())
+            if (Asset.is_pool_weapon)
             {
-                if (Asset.is_pool_weapon && !Library.pool_weapon_assets_unlocked.Contains(Asset))
+                Asset.gameplay_sprites = SpriteTextureLoader.getSpriteList(Asset.path_gameplay_sprite, false);
+                if (Asset.gameplay_sprites.Length == 0)
                 {
-                    Library.pool_weapon_assets_unlocked.Add(Asset);
-                }
-                if (!Asset.is_pool_weapon)
-                {
-                    string tGroupId = Asset.group_id;
-                    if (!Library.equipment_by_groups_unlocked.ContainsKey(tGroupId))
-                    {
-                        Library.equipment_by_groups_unlocked.Add(tGroupId, new List<ItemAsset>());
-                    }
-                    List<ItemAsset> tList = Library.equipment_by_groups_unlocked[tGroupId];
-                    if (!tList.Contains(Asset))
-                    {
-                        tList.Add(Asset);
-                    }
+                    Debug.LogError("Weapon Texture is Missing: " + Asset.path_gameplay_sprite);
                 }
             }
         }
@@ -168,12 +165,6 @@ namespace NeoModLoader.utils.Builders
         {
             get { return Asset.name_templates; }
             set { Asset.name_templates = value.ToList(); }
-        }
-        void AddWeaponsSprite()
-        {
-            var dictItems = ActorAnimationLoader._dict_items;
-            var sprite = Resources.Load<Sprite>("weapons/" + Asset.id);
-            dictItems.Add("w_" + Asset.id, new List<Sprite>() { sprite });
         }
         /// <summary>
         /// Localizes the Items name and description the current language
@@ -261,5 +252,5 @@ namespace NeoModLoader.utils.Builders
         /// not used by the game at the moment!
         /// </summary>
         public int Rate { get { return Asset.pool_rate; } set { Asset.pool_rate = value; } }
-    }*/
+    }
 }
