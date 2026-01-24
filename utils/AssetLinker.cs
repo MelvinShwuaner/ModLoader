@@ -334,8 +334,7 @@ namespace NeoModLoader.utils
             PhenotypeLibrary Library = AssetManager.phenotype_library;
             Library.createShades(Asset);
             Asset.phenotype_index = Library.list.Count - 1;
-            Library._phenotypes_assets_by_index.Add(Asset.phenotype_index, Asset);
-            
+            Library._phenotypes_assets_by_index.Add(Asset.phenotype_index, Asset);   
         }
         public static void LinkItem(Asset asset)
         {
