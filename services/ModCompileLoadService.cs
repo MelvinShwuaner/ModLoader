@@ -11,7 +11,6 @@ using NeoModLoader.constants;
 using NeoModLoader.General;
 using NeoModLoader.ncms_compatible_layer;
 using NeoModLoader.utils;
-using NeoModLoader.utils.Builders;
 using UnityEngine;
 
 namespace NeoModLoader.services;
@@ -628,15 +627,13 @@ public static class ModCompileLoadService
         bool compile_success = TryCompileModAtRuntime(mod_declare);
 
         if (!compile_success) return false;
-        MasterBuilder Builder = new MasterBuilder();
-        ResourcesPatch.LoadResourceFromFolder(Path.Combine(mod_declare.FolderPath, Paths.ModResourceFolderName), out List<Builder> builders);
+        AssetLinker Linker = new AssetLinker();
+        ResourcesPatch.LoadResourceFromFolder(Path.Combine(mod_declare.FolderPath, Paths.ModResourceFolderName), Linker);
         ResourcesPatch.LoadResourceFromFolder(Path.Combine(mod_declare.FolderPath,
-            Paths.NCMSAdditionModResourceFolderName), out List<Builder> builders2);
+            Paths.NCMSAdditionModResourceFolderName), Linker);
 
         LoadMod(mod_declare);
-        Builder.AddBuilders(builders);
-        Builder.AddBuilders(builders2);
-        Builder.BuildAll();
+        Linker.AddAssets();
         return true;
     }
 

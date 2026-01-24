@@ -9,7 +9,6 @@ using NeoModLoader.ncms_compatible_layer;
 using NeoModLoader.services;
 using NeoModLoader.ui;
 using NeoModLoader.utils;
-using NeoModLoader.utils.Builders;
 using UnityEngine;
 
 namespace NeoModLoader;
@@ -80,7 +79,6 @@ public class WorldBoxMod : MonoBehaviour
         Harmony.CreateAndPatchAll(typeof(LM), Others.harmony_id);
         Harmony.CreateAndPatchAll(typeof(ResourcesPatch), Others.harmony_id);
         Harmony.CreateAndPatchAll(typeof(CustomAudioManager), Others.harmony_id);
-        Harmony.CreateAndPatchAll(typeof(AssetPatches), Others.harmony_id);
         if (!SmoothLoader.isLoading()) SmoothLoader.prepare();
 
         SmoothLoader.add(() =>
@@ -124,7 +122,7 @@ public class WorldBoxMod : MonoBehaviour
                     }
                 }, "Compile Mod " + mod.mod_decl.Name);
             }
-            MasterBuilder Builder = new();
+            AssetLinker Linker = new();
             foreach (var mod in mod_nodes)
             {
                 SmoothLoader.add(() =>
@@ -132,11 +130,9 @@ public class WorldBoxMod : MonoBehaviour
                     if (mods_to_load.Contains(mod.mod_decl))
                     {
                         ResourcesPatch.LoadResourceFromFolder(Path.Combine(mod.mod_decl.FolderPath,
-                            Paths.ModResourceFolderName), out List<Builder> builders);
-                        Builder.AddBuilders(builders);
+                            Paths.ModResourceFolderName), Linker);
                         ResourcesPatch.LoadResourceFromFolder(Path.Combine(mod.mod_decl.FolderPath,
-                            Paths.NCMSAdditionModResourceFolderName), out List<Builder> builders2);
-                       Builder.AddBuilders(builders2);
+                            Paths.NCMSAdditionModResourceFolderName), Linker);
                         ResourcesPatch.LoadAssetBundlesFromFolder(Path.Combine(mod.mod_decl.FolderPath,
                             Paths.ModAssetBundleFolderName));
                     }
@@ -146,7 +142,7 @@ public class WorldBoxMod : MonoBehaviour
             SmoothLoader.add(() =>
             {
                 ModCompileLoadService.loadMods(mods_to_load);
-                Builder.BuildAll();
+                Linker.AddAssets();
                 ModInfoUtils.SaveModRecords();
                 NCMSCompatibleLayer.Init();
                 var successfulInit = new Dictionary<IMod, bool>();
