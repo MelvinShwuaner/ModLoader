@@ -702,6 +702,11 @@ namespace NeoModLoader.utils
                 AssetManager.hotkey_library.action_hotkeys.AddItem(hotkeyAsset);
             }
         }
+        public static void LinkWorldBehaviourAsset(Asset asset)
+        {
+            WorldBehaviourAsset worldBehaviourAsset = asset as WorldBehaviourAsset;
+            worldBehaviourAsset.manager = new WorldBehaviour(worldBehaviourAsset);
+        }
         #endregion
     }
 }
