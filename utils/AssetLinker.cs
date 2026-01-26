@@ -1,5 +1,7 @@
-﻿using NeoModLoader.services;
+﻿using HarmonyLib;
+using NeoModLoader.services;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.Reflection;
 using UnityEngine;
 
@@ -661,6 +663,36 @@ namespace NeoModLoader.utils
             if (statusAsset.texture != null && statusAsset.sprite_list == null)
             {
                 statusAsset.sprite_list = SpriteTextureLoader.getSpriteList("effects/" + statusAsset.texture, false);
+            }
+        }
+        public static void LinkHotkeyAsset(Asset asset)
+        {
+            HotkeyAsset hotkeyAsset = asset as HotkeyAsset;
+            hotkeyAsset.overridden_key_1 = hotkeyAsset.default_key_1;
+            hotkeyAsset.overridden_key_2 = hotkeyAsset.default_key_2;
+            hotkeyAsset.overridden_key_3 = hotkeyAsset.default_key_3;
+            hotkeyAsset.overridden_key_mod_1 = hotkeyAsset.default_key_mod_1;
+            hotkeyAsset.overridden_key_mod_2 = hotkeyAsset.default_key_mod_2;
+            hotkeyAsset.overridden_key_mod_3 = hotkeyAsset.default_key_mod_3;
+            if (hotkeyAsset.default_key_mod_1 != null)
+            {
+                HotkeyLibrary.mod_keys.AddItem(hotkeyAsset.default_key_mod_1);
+            }
+            if (hotkeyAsset.default_key_mod_2 != null)
+            {
+                HotkeyLibrary.mod_keys.AddItem(hotkeyAsset.default_key_mod_2);
+            }
+            if (hotkeyAsset.default_key_mod_3 != null)
+            {
+                HotkeyLibrary.mod_keys.AddItem(hotkeyAsset.default_key_mod_3);
+            }
+            if (hotkeyAsset.just_pressed_action != null)
+            {
+                AssetManager.hotkey_library.action_hotkeys.AddItem(hotkeyAsset);
+            }
+            else if (hotkeyAsset.holding_action != null)
+            {
+                AssetManager.hotkey_library.action_hotkeys.AddItem(hotkeyAsset);
             }
         }
         #endregion
