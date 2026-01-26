@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using NeoModLoader.services;
+using Newtonsoft.Json.Linq;
 using System.Reflection;
 
 namespace NeoModLoader.utils
@@ -69,7 +70,15 @@ namespace NeoModLoader.utils
                 }
                 else if (Value is JObject JObject)
                 {
-                    return JObject.ToObject(Type);
+                    try
+                    {
+                        return JObject.ToObject(Type);
+                    }
+                    catch(Exception e)
+                    {
+                        LogService.LogWarning($"Warning: the field {Type.Name} of Asset {Type.DeclaringType} is invalid.");
+                        return null;
+                    }
                 }
                 return Value;
             }
