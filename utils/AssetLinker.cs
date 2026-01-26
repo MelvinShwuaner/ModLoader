@@ -60,7 +60,7 @@ namespace NeoModLoader.utils
                 {
                     Assets.Add(LoadFile(FilePath));
                 }
-                catch
+                catch (Exception e)
                 {
                     LogService.LogError($"Could not load Asset of type {Path.GetExtension(FilePath)}!");
                 }
@@ -683,23 +683,23 @@ namespace NeoModLoader.utils
             hotkeyAsset.overridden_key_mod_3 = hotkeyAsset.default_key_mod_3;
             if (hotkeyAsset.default_key_mod_1 != null)
             {
-                HotkeyLibrary.mod_keys.AddItem(hotkeyAsset.default_key_mod_1);
+                HotkeyLibrary.mod_keys = HotkeyLibrary.mod_keys.AddToArray(hotkeyAsset.default_key_mod_1);
             }
             if (hotkeyAsset.default_key_mod_2 != null)
             {
-                HotkeyLibrary.mod_keys.AddItem(hotkeyAsset.default_key_mod_2);
+                HotkeyLibrary.mod_keys = HotkeyLibrary.mod_keys.AddToArray(hotkeyAsset.default_key_mod_2);
             }
             if (hotkeyAsset.default_key_mod_3 != null)
             {
-                HotkeyLibrary.mod_keys.AddItem(hotkeyAsset.default_key_mod_3);
+                HotkeyLibrary.mod_keys = HotkeyLibrary.mod_keys.AddToArray(hotkeyAsset.default_key_mod_3);
             }
             if (hotkeyAsset.just_pressed_action != null)
             {
-                AssetManager.hotkey_library.action_hotkeys.AddItem(hotkeyAsset);
+                AssetManager.hotkey_library.action_hotkeys = AssetManager.hotkey_library.action_hotkeys.AddToArray(hotkeyAsset);
             }
             else if (hotkeyAsset.holding_action != null)
             {
-                AssetManager.hotkey_library.action_hotkeys.AddItem(hotkeyAsset);
+                AssetManager.hotkey_library.action_hotkeys = AssetManager.hotkey_library.action_hotkeys.AddToArray(hotkeyAsset);
             }
         }
         public static void LinkWorldBehaviourAsset(Asset asset)
