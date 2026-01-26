@@ -54,9 +54,16 @@ namespace NeoModLoader.utils
         /// </summary>
         public void AddAssets(bool Link = true)
         {
-            foreach(string FilePath in AssetFilePaths)
+            foreach (string FilePath in AssetFilePaths)
             {
-                Assets.Add(LoadFile(FilePath));
+                try
+                {
+                    Assets.Add(LoadFile(FilePath));
+                }
+                catch
+                {
+                    LogService.LogError($"Could not load Asset of type {Path.GetExtension(FilePath)}!");
+                }
             }
             foreach (Asset asset in Assets)
             {
