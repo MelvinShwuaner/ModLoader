@@ -286,90 +286,102 @@ public static class TranspilerSupport
     return new MirrorData(dynMethod, transpilers);
 }
     private static MethodInfo BuildRedirectPrefix(MethodBase original)
-{
-    var parameters = original.GetParameters();
-    var paramTypes = parameters.Select(p => p.ParameterType).ToList();
-    var returnType = original is MethodInfo mi ? mi.ReturnType : typeof(void);
-
-    if (!original.IsStatic)
-        paramTypes.Insert(0, original.DeclaringType);
-
-    if (returnType != typeof(void))
-        paramTypes.Add(returnType.MakeByRefType());
-
-    var prefix = new DynamicMethod(
-        original.Name + "_redirect",
-        typeof(bool),
-        paramTypes.ToArray(),
-        typeof(Redirects),
-        true
-    );
-
-    var il = prefix.GetILGenerator();
-    
-    il.Emit(OpCodes.Ldtoken, original as MethodInfo ?? throw new Exception());
-    il.Emit(OpCodes.Call, typeof(MethodBase)
-        .GetMethod(nameof(MethodBase.GetMethodFromHandle), new[] { typeof(RuntimeMethodHandle) }));
-
-    il.Emit(OpCodes.Call, AccessTools.Method(typeof(TranspilerSupport), nameof(GetMirror)));
-
-    var mirrorLocal = il.DeclareLocal(typeof(MirrorData));
-    il.Emit(OpCodes.Stloc, mirrorLocal);
-    
-    il.Emit(OpCodes.Ldloc, mirrorLocal);
-    il.Emit(OpCodes.Ldfld, typeof(MirrorData).GetField(nameof(MirrorData.Method)));
-
-    var delegateType = typeof(Delegate);
-    var invoke = delegateType.GetMethod("DynamicInvoke", new[] { typeof(object[]) });
-    
-    int argCount = original.IsStatic ? parameters.Length : parameters.Length + 1;
-
-    il.Emit(OpCodes.Ldc_I4, argCount);
-    il.Emit(OpCodes.Newarr, typeof(object));
-
-    for (int i = 0; i < argCount; i++)
     {
-        il.Emit(OpCodes.Dup);
-        il.Emit(OpCodes.Ldc_I4, i);
-        il.Emit(OpCodes.Ldarg, i);
+        var parameters = original.GetParameters();
+        var paramTypes = parameters.Select(p => p.ParameterType).ToList();
+        var returnType = original is MethodInfo mi ? mi.ReturnType : typeof(void);
+        
+        if (!original.IsStatic)
+            paramTypes.Insert(0, original.DeclaringType);
+    
+        if (returnType != typeof(void))
+            paramTypes.Add(returnType.MakeByRefType());
 
-        if (paramTypes[i].IsValueType)
-            il.Emit(OpCodes.Box, paramTypes[i]);
+        var prefix = new DynamicMethod(
+            original.Name + "_redirect",
+            typeof(bool),          
+            paramTypes.ToArray(),
+            typeof(Redirects),       
+            skipVisibility: true
+        );
 
-        il.Emit(OpCodes.Stelem_Ref);
-    }
+        var il = prefix.GetILGenerator();
 
-    il.Emit(OpCodes.Callvirt, invoke);
+        int paramOffset = original.IsStatic ? 0 : 1;
+    
+        for (int i = 0; i < paramTypes.Count; i++)
+        {
+            string name;
+            if (i == 0 && !original.IsStatic)
+                name = "__instance";
+            else if (returnType != typeof(void) && i == paramTypes.Count - 1)
+                name = "__result";
+            else
+                name = parameters[i - paramOffset].Name;
 
-    if (returnType != typeof(void))
-    {
-        var resultLocal = il.DeclareLocal(returnType);
+            prefix.DefineParameter(i + 1, ParameterAttributes.None, name);
+        }
+    
+        int argCount = paramTypes.Count - (returnType != typeof(void) ? 1 : 0);
+        il.Emit(OpCodes.Ldc_I4, argCount);
+        il.Emit(OpCodes.Newarr, typeof(object));
 
-        if (returnType.IsValueType)
-            il.Emit(OpCodes.Unbox_Any, returnType);
+        for (int i = 0; i < argCount; i++)
+        {
+            il.Emit(OpCodes.Dup);
+            il.Emit(OpCodes.Ldc_I4, i);
+            il.Emit(OpCodes.Ldarg, i);
+
+            if (paramTypes[i].IsValueType)
+                il.Emit(OpCodes.Box, paramTypes[i]);
+
+            il.Emit(OpCodes.Stelem_Ref);
+        }
+    
+        il.Emit(OpCodes.Ldtoken, original as MethodInfo ?? throw new Exception());
+        il.Emit(OpCodes.Call, typeof(MethodBase).GetMethod(nameof(MethodBase.GetMethodFromHandle), new[] { typeof(RuntimeMethodHandle) }));
+    
+        var argsLocal = il.DeclareLocal(typeof(object[]));
+        var methodLocal = il.DeclareLocal(typeof(MethodBase));
+
+        il.Emit(OpCodes.Stloc, methodLocal); 
+        il.Emit(OpCodes.Stloc, argsLocal);  
+    
+        il.Emit(OpCodes.Ldloc, methodLocal);
+        il.Emit(OpCodes.Ldloc, argsLocal);
+    
+        il.Emit(OpCodes.Call, AccessTools.Method(typeof(TranspilerSupport), nameof(InvokeMirror)));
+
+        // Handle return value
+        if (returnType != typeof(void))
+        {
+            var resultLocal = il.DeclareLocal(returnType);
+
+            if (returnType.IsValueType)
+                il.Emit(OpCodes.Unbox_Any, returnType);
+            else
+                il.Emit(OpCodes.Castclass, returnType);
+
+            il.Emit(OpCodes.Stloc, resultLocal);
+        
+            il.Emit(OpCodes.Ldarg, paramTypes.Count - 1); // __result ref
+            il.Emit(OpCodes.Ldloc, resultLocal);
+
+            if (returnType.IsValueType)
+                il.Emit(OpCodes.Stobj, returnType);
+            else
+                il.Emit(OpCodes.Stind_Ref);
+        }
         else
-            il.Emit(OpCodes.Castclass, returnType);
-
-        il.Emit(OpCodes.Stloc, resultLocal);
-
-        il.Emit(OpCodes.Ldarg, paramTypes.Count - 1);
-        il.Emit(OpCodes.Ldloc, resultLocal);
-
-        if (returnType.IsValueType)
-            il.Emit(OpCodes.Stobj, returnType);
-        else
-            il.Emit(OpCodes.Stind_Ref);
+        {
+            il.Emit(OpCodes.Pop);
+        }
+    
+        il.Emit(OpCodes.Ldc_I4_0);
+        il.Emit(OpCodes.Ret);
+    
+        return prefix;
     }
-    else
-    {
-        il.Emit(OpCodes.Pop);
-    }
-
-    il.Emit(OpCodes.Ldc_I4_0);
-    il.Emit(OpCodes.Ret);
-
-    return prefix;
-}
     private static object RemapOperand(object operand)
     {
         switch (operand)
