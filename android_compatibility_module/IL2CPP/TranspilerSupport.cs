@@ -338,7 +338,7 @@ public static class TranspilerSupport
             il.Emit(OpCodes.Stelem_Ref);
         }
     
-        il.Emit(OpCodes.Ldtoken, original as MethodInfo ?? throw new Exception());
+        il.Emit(OpCodes.Ldtoken, original as MethodInfo ?? throw new NotSupportedException("The Native method is not a method!"));
         il.Emit(OpCodes.Call, typeof(MethodBase).GetMethod(nameof(MethodBase.GetMethodFromHandle), new[] { typeof(RuntimeMethodHandle) }));
     
         var argsLocal = il.DeclareLocal(typeof(object[]));
@@ -376,7 +376,7 @@ public static class TranspilerSupport
         {
             il.Emit(OpCodes.Pop);
         }
-    
+        //return false to replace original
         il.Emit(OpCodes.Ldc_I4_0);
         il.Emit(OpCodes.Ret);
     
@@ -405,13 +405,6 @@ public static class TranspilerSupport
 
             case Type t when t.Assembly == ManagedAssembly:
                 return RemapType(t, NativeAssembly);
-
-            case FieldInfo f when f.DeclaringType?.Assembly == ManagedAssembly:
-                return AccessTools.Field(
-                    RemapType(f.DeclaringType, NativeAssembly),
-                    f.Name
-                );
-
             default:
                 return operand;
         }
