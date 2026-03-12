@@ -1,3 +1,7 @@
+using HarmonyLib;
+using NeoModLoader.AndroidCompatibilityModule.TranspilerSupport;
+using NeoModLoader.constants;
+
 namespace NeoModLoader.AndroidCompatibilityModule;
 #if IL2CPP
 using MelonLoader.Utils;
@@ -9,6 +13,12 @@ public static class MelonHelper
     public static string GetPath()
     {
         return MelonEnvironment.GameRootDirectory;
+    }
+
+    public static void Init()
+    {
+        Log("Initializing android support module");
+        TranspilerSupport.TranspilerSupport.Initialize(new Harmony(Others.harmony_id));
     }
     /// <summary>
      /// Reads a file in the apk assets directory
@@ -62,5 +72,6 @@ public static class MelonHelper
     public static byte[] ReadAPKAsset(string assetPath){
         throw new NotImplementedException("How did we get here?");
     }
+    public static void Init(){}
     #endif
 }

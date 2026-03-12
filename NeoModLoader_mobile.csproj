@@ -130,7 +130,6 @@
 
     <ItemGroup>
       <None Remove="resources\assemblies\0Harmony.dll" />
-      <None Remove="resources\assemblies\Assembly-CSharp-Publicized.dll" />
         <None Remove="resources\assemblies\System.Reflection.Metadata-renamed.dll" />
         <EmbeddedResource Include="resources\assemblies\System.Reflection.Metadata-renamed.dll" />
         <None Remove="resources\assemblies\System.Text.Encoding.CodePages.dll" />
@@ -176,6 +175,8 @@
       <EmbeddedResource Include="resources\locales\en.json" />
       <None Remove="resources\locales\ch.json" />
       <EmbeddedResource Include="resources\locales\ch.json" />
+      <None Remove="resources\assemblies\Assembly-CSharp-Publicized.dll" />
+      <EmbeddedResource Include="resources\assemblies\Assembly-CSharp-Publicized.dll" />
       <None Remove="resources\square_frame_only.png" />
       <EmbeddedResource Include="resources\square_frame_only.png" />
       <None Remove="resources\commit" />

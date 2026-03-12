@@ -1,3 +1,5 @@
+using System.Reflection;
+using System.Reflection.Emit;
 using HarmonyLib;
 using NeoModLoader.utils.instpredictors;
 
@@ -83,5 +85,130 @@ public static class HarmonyUtils
     internal static void _init()
     {
         BaseInstPredictor._init();
+    }
+    /// <summary>
+    /// Emits an instruction depending on the type of the operand
+    /// </summary>
+    public static void EmitInstruction(this ILGenerator il, OpCode opcode, object operand)
+    {
+        switch (operand)
+        {
+            case null:
+                il.Emit(opcode);
+                break;
+            case int i:
+                il.Emit(opcode, i);
+                break;
+            case long l:
+                il.Emit(opcode, l);
+                break;
+            case float f:
+                il.Emit(opcode, f);
+                break;
+            case double d:
+                il.Emit(opcode, d);
+                break;
+            case string s:
+                il.Emit(opcode, s);
+                break;
+            case byte b:
+                il.Emit(opcode, b);
+                break;
+            case sbyte sb:
+                il.Emit(opcode, sb);
+                break;
+            case MethodInfo m:
+                il.Emit(opcode, m);
+                break;
+            case ConstructorInfo c:
+                il.Emit(opcode, c);
+                break;
+            case FieldInfo fi:
+                il.Emit(opcode, fi);
+                break;
+            case Type t:
+                il.Emit(opcode, t);
+                break;
+            case Label lbl:
+                il.Emit(opcode, lbl);
+                break;
+            case Label[] lbls:
+                il.Emit(opcode, lbls);
+                break;
+            case LocalBuilder local:
+                il.Emit(opcode, local);
+                break;
+            case SignatureHelper sig:
+                il.Emit(opcode, sig);
+                break;
+            default:
+                throw new NotSupportedException($"Unsupported operand type: {operand.GetType()}");
+        }
+    }
+    /// <summary>
+    /// Invokes a Prefix method. returns a object if the prefix replaces, returns null if not
+    /// </summary>
+    /// <param name="Prefix">the prefix</param>
+    /// <param name="args">the arguments, including __instance. __result is SEPERATE</param>
+    /// <param name="Replaced">returns if the prefix returns false or not</param>
+    /// <returns></returns>
+    public static object InvokePrefix(MethodInfo Prefix, ref object[] args, out bool Replaced)
+    {
+        Replaced = false;
+        object __result = null;
+
+        var parameters = Prefix.GetParameters();
+        var invokeArgs = new object[parameters.Length];
+        int argsIndex = 0; 
+
+        for (int i = 0; i < parameters.Length; i++)
+        {
+            var param = parameters[i];
+
+            if (param.Name == "__result")
+            {
+                invokeArgs[i] = null;
+            }
+            else
+            {
+                invokeArgs[i] = argsIndex < args.Length ? args[argsIndex] : null;
+                argsIndex++;
+            }
+        }
+
+        object invokeResult = Prefix.Invoke(null, invokeArgs);
+        
+        argsIndex = 0;
+        for (int i = 0; i < parameters.Length; i++)
+        {
+            var param = parameters[i];
+
+            if (param.Name == "__result")
+            {
+                if (param.ParameterType.IsByRef)
+                    __result = invokeArgs[i];
+            }
+            else
+            {
+                if (param.ParameterType.IsByRef && argsIndex < args.Length)
+                    args[argsIndex] = invokeArgs[i];
+                argsIndex++;
+            }
+        }
+        if (Prefix.ReturnType == typeof(bool) && invokeResult is bool continueExecution)
+        {
+            Replaced = !continueExecution;
+        }
+        return __result;
+    }
+
+    public static Comparison<MethodInfo> SortByPriority
+    {
+        get { return (method1, method2) => method1.GetPriority().CompareTo(method2.GetPriority()); }
+    }
+    public static int GetPriority(this MethodInfo Method)
+    {
+        var priority = Method.GetCustomAttribute<HarmonyPriority>() ?? Method.DeclaringType?.GetCustomAttribute<HarmonyPriority>();
+        return priority == null ? Priority.Normal : priority.info.priority;
     }
 }

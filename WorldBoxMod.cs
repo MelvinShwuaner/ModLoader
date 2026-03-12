@@ -92,6 +92,7 @@ public class WorldBoxMod : MonoBehaviour
             ModUploadAuthenticationService.AutoAuth();
         
         HarmonyUtils._init();
+        MelonHelper.Init();
         HarmonyLib.Harmony.CreateAndPatchAll(typeof(LM), Others.harmony_id); ;
         HarmonyLib.Harmony.CreateAndPatchAll(typeof(ResourcesPatch), Others.harmony_id);
         HarmonyLib.Harmony.CreateAndPatchAll(typeof(CustomAudioManager), Others.harmony_id);
@@ -276,43 +277,39 @@ public class WorldBoxMod : MonoBehaviour
                 extractAssemblies();
             }
         }
-
-        if (!Config.isAndroid)
+        try
         {
-            try
+            using var stream =
+                NeoModLoaderAssembly.GetManifestResourceStream(
+                    "NeoModLoader.resources.assemblies.Assembly-CSharp-Publicized.dll");
+            if (File.Exists(Paths.PublicizedAssemblyPath))
             {
-                using var stream =
-                    NeoModLoaderAssembly.GetManifestResourceStream(
-                        "NeoModLoader.resources.assemblies.Assembly-CSharp-Publicized.dll");
-                if (File.Exists(Paths.PublicizedAssemblyPath))
+                var modupdate_time = new FileInfo(Paths.NMLModPath).LastWriteTime;
+                var assemblyupdate_time = new FileInfo(Paths.PublicizedAssemblyPath).CreationTime;
+                if (modupdate_time > assemblyupdate_time)
                 {
-                    var modupdate_time = new FileInfo(Paths.NMLModPath).LastWriteTime;
-                    var assemblyupdate_time = new FileInfo(Paths.PublicizedAssemblyPath).CreationTime;
-                    if (modupdate_time > assemblyupdate_time)
-                    {
-                        LogService.LogInfo($"NeoModLoader.dll is newer than Assembly-CSharp-Publicized.dll, " +
-                                           $"re-extract Assembly-CSharp-Publicized.dll from NeoModLoader.dll");
-                        File.Delete(Paths.PublicizedAssemblyPath);
-                        using var file = new FileStream(Paths.PublicizedAssemblyPath, FileMode.Create,
-                            FileAccess.Write);
-                        stream.CopyTo(file);
-                    }
-                }
-                else
-                {
-                    using var file = new FileStream(Paths.PublicizedAssemblyPath, FileMode.CreateNew, FileAccess.Write);
+                    LogService.LogInfo($"NeoModLoader.dll is newer than Assembly-CSharp-Publicized.dll, " +
+                                       $"re-extract Assembly-CSharp-Publicized.dll from NeoModLoader.dll");
+                    File.Delete(Paths.PublicizedAssemblyPath);
+                    using var file = new FileStream(Paths.PublicizedAssemblyPath, FileMode.Create,
+                        FileAccess.Write);
                     stream.CopyTo(file);
                 }
             }
-            catch (UnauthorizedAccessException) // If the file is hidden, delete it and try again
+            else
             {
-                File.Delete(Paths.PublicizedAssemblyPath);
-                using var stream =
-                    NeoModLoaderAssembly.GetManifestResourceStream(
-                        "NeoModLoader.resources.assemblies.Assembly-CSharp-Publicized.dll");
                 using var file = new FileStream(Paths.PublicizedAssemblyPath, FileMode.CreateNew, FileAccess.Write);
                 stream.CopyTo(file);
             }
+        }
+        catch (UnauthorizedAccessException) // If the file is hidden, delete it and try again
+        {
+            File.Delete(Paths.PublicizedAssemblyPath);
+            using var stream =
+                NeoModLoaderAssembly.GetManifestResourceStream(
+                    "NeoModLoader.resources.assemblies.Assembly-CSharp-Publicized.dll");
+            using var file = new FileStream(Paths.PublicizedAssemblyPath, FileMode.CreateNew, FileAccess.Write);
+            stream.CopyTo(file);
         }
         foreach (var file_full_path in Directory.GetFiles(Paths.NMLAssembliesPath, "*.dll"))
         {

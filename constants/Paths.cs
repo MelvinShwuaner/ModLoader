@@ -69,9 +69,9 @@ public static class Paths
         Combine(NativeModsPath, "NeoModLoader.AutoUpdate_memload.dll");
 
     /// <summary>
-    /// Path to the publicized Assembly-CSharp.dll file, or just assembly-csharp on android because its already publicized
+    /// Path to the publicized Assembly-CSharp.dll file, on android this is used as IL replacements for transpiler support
     /// </summary>
-    public static readonly string PublicizedAssemblyPath = Config.isAndroid ? Combine(ManagedPath, "Assembly-CSharp.dll") : Combine(NMLPath, "Assembly-CSharp-Publicized.dll");
+    public static readonly string PublicizedAssemblyPath = Combine(NMLPath, "Assembly-CSharp-Publicized.dll");
 
     /// <summary>
     /// Path to folder mods config under persistent data folder

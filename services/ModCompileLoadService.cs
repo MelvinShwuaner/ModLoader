@@ -296,7 +296,10 @@ public static class ModCompileLoadService
         {
             _default_ref = _default_ref.AddRangeToArray(LoadDotNetReferencesFromApk(Paths.DotnetAPKPath).ToArray());
         }
-        _publicized_assembly_ref = MetadataReference.CreateFromFile(Paths.PublicizedAssemblyPath);
+        else
+        {
+            _publicized_assembly_ref = MetadataReference.CreateFromFile(Paths.PublicizedAssemblyPath);
+        }
     }
 
     /// <summary>
