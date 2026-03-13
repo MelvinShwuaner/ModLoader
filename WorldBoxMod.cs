@@ -235,7 +235,7 @@ public class WorldBoxMod : MonoBehaviour
             File.Create(Paths.ModCompileRecordPath).Close();
             LogService.LogInfo($"Create mod_compile_records.json at {Paths.ModCompileRecordPath}");
         }
-
+        string name = Config.isAndroid ? "_mobile" : "";
         void extractAssemblies()
         {
             var resources = NeoModLoaderAssembly.GetManifestResourceNames();
@@ -245,7 +245,7 @@ public class WorldBoxMod : MonoBehaviour
                 {
                     if (resource.Contains("Assembly-CSharp-Publicized")) continue;
                     if (resource.Contains("AutoUpdate")) continue;
-                    var file_name = resource.Replace("NeoModLoader.resources.assemblies.", "");
+                    var file_name = resource.Replace($"NeoModLoader{name}.resources.assemblies.", "");
                     var file_path = Path.Combine(Paths.NMLAssembliesPath, file_name).Replace("-renamed", "");
 
                     using var stream = NeoModLoaderAssembly.GetManifestResourceStream(resource);
@@ -281,7 +281,7 @@ public class WorldBoxMod : MonoBehaviour
         {
             using var stream =
                 NeoModLoaderAssembly.GetManifestResourceStream(
-                    "NeoModLoader.resources.assemblies.Assembly-CSharp-Publicized.dll");
+                    $"NeoModLoader{name}.resources.assemblies.Assembly-CSharp-Publicized.dll");
             if (File.Exists(Paths.PublicizedAssemblyPath))
             {
                 var modupdate_time = new FileInfo(Paths.NMLModPath).LastWriteTime;
@@ -307,7 +307,7 @@ public class WorldBoxMod : MonoBehaviour
             File.Delete(Paths.PublicizedAssemblyPath);
             using var stream =
                 NeoModLoaderAssembly.GetManifestResourceStream(
-                    "NeoModLoader.resources.assemblies.Assembly-CSharp-Publicized.dll");
+                    $"NeoModLoader{name}.resources.assemblies.Assembly-CSharp-Publicized.dll");
             using var file = new FileStream(Paths.PublicizedAssemblyPath, FileMode.CreateNew, FileAccess.Write);
             stream.CopyTo(file);
         }
@@ -351,7 +351,6 @@ public class WorldBoxMod : MonoBehaviour
 
         if (!File.Exists(Paths.NMLAutoUpdateModulePath))
         {
-            string name = Config.isAndroid ? "_mobile" : "";
             using Stream stream = NeoModLoaderAssembly.GetManifestResourceStream(
                 $"NeoModLoader{name}.resources.assemblies.NeoModLoader.AutoUpdate.dll");
             using var file = new FileStream(Paths.NMLAutoUpdateModulePath, FileMode.CreateNew, FileAccess.Write);

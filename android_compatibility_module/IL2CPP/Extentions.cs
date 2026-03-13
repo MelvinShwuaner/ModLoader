@@ -78,11 +78,23 @@ public static class Extentions
     {
         return (T) WrapperHelper.GetWrappedComponent(obj, typeof(T));
     }
+
+    public static T[] Remove<T>(this T[] arr, T toremove)
+    {
+        List<T> list = new List<T>(arr);
+        list.Remove(toremove);
+        return list.ToArray();
+    }
     public static void AddListener(this UnityEvent action, Delegate func){
         action.AddListener(Converter.C<UnityAction>(func));
     }
     public static void AddListener<T>(this UnityEvent<T> action, Delegate func){
         action.AddListener(Converter.C<UnityAction<T>>(func));
+    }
+
+    public static string FileName(this Assembly assembly)
+    {
+        return Path.GetFileName(assembly.Location);
     }
     public static WrappedBehaviour AddComponent(this GameObject gameObject, Type type)
     {

@@ -70,7 +70,7 @@ public static class MelonHelper
         UnityEngine.Debug.LogWarning(msg);
     }
     public static byte[] ReadAPKAsset(string assetPath){
-        throw new NotImplementedException("How did we get here?");
+        throw new PlatformNotSupportedException("How did we get here?");
     }
     public static void Init(){}
     #endif

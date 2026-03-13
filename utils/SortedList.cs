@@ -18,7 +18,7 @@ public class SortedList<T> : IList<T>
     public SortedList(Comparison<T> comparater, List<T> list)
     {
         Comparater =  comparater;
-        List = list;
+        List = list ?? [];
         Sort();
     }
     /// <summary>

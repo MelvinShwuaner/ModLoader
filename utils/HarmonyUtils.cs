@@ -86,10 +86,15 @@ public static class HarmonyUtils
     {
         BaseInstPredictor._init();
     }
+
+    public static void Emit(this List<CodeInstruction> list, OpCode opcode, object operand = null)
+    {
+        list.Add(new CodeInstruction(opcode, operand));
+    }
     /// <summary>
     /// Emits an instruction depending on the type of the operand
     /// </summary>
-    public static void EmitInstruction(this ILGenerator il, OpCode opcode, object operand)
+    public static void Emit(this ILGenerator il, OpCode opcode, object operand)
     {
         switch (operand)
         {
@@ -201,14 +206,33 @@ public static class HarmonyUtils
         }
         return __result;
     }
-
-    public static Comparison<MethodInfo> SortByPriority
+    /// <summary>
+    /// Invokes a Transpiler method. returns the outputed instructions
+    /// </summary>
+    /// <param name="Transpiler">the transpiler</param>
+    /// <param name="instructions">the original instructions</param>
+    /// <param name="generator">the IL generator</param>
+    /// <param name="original">the original method, that this transpiler is patching</param>
+    /// <returns></returns>
+    public static IEnumerable<CodeInstruction> InvokeTranspiler(MethodInfo Transpiler, IEnumerable<CodeInstruction> instructions, ILGenerator generator = null, MethodBase original = null)
     {
-        get { return (method1, method2) => method1.GetPriority().CompareTo(method2.GetPriority()); }
+        var transpilerParams = Transpiler.GetParameters();
+        var args = transpilerParams.Select(object (p) =>
+        {
+            if (p.ParameterType == typeof(IEnumerable<CodeInstruction>))
+                return instructions;
+            if (p.ParameterType == typeof(ILGenerator))
+                return generator;
+            return p.ParameterType == typeof(MethodBase) ? original : null;
+        }).ToArray();
+        return (IEnumerable<CodeInstruction>)Transpiler.Invoke(null, args);
     }
+    public static readonly Comparison<MethodInfo> SortByPriority = (method1, method2) => method1.GetPriority().CompareTo(method2.GetPriority());
     public static int GetPriority(this MethodInfo Method)
     {
         var priority = Method.GetCustomAttribute<HarmonyPriority>() ?? Method.DeclaringType?.GetCustomAttribute<HarmonyPriority>();
         return priority == null ? Priority.Normal : priority.info.priority;
     }
+
+    
 }

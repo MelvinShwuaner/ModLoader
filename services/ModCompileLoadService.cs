@@ -51,7 +51,7 @@ public static class ModCompileLoadService
         List<MetadataReference> list = pDefaultInc.ToList();
         list.AddRange(pAddInc.Select(inc => MetadataReference.CreateFromFile(inc)));
         LoadAddInc();
-        if (pModDecl.UsePublicizedAssembly)
+        if (pModDecl.UsePublicizedAssembly && !Config.isAndroid)
         {
             list.Add(_publicized_assembly_ref);
         }
@@ -296,10 +296,7 @@ public static class ModCompileLoadService
         {
             _default_ref = _default_ref.AddRangeToArray(LoadDotNetReferencesFromApk(Paths.DotnetAPKPath).ToArray());
         }
-        else
-        {
-            _publicized_assembly_ref = MetadataReference.CreateFromFile(Paths.PublicizedAssemblyPath);
-        }
+        _publicized_assembly_ref = MetadataReference.CreateFromFile(Paths.PublicizedAssemblyPath);
     }
 
     /// <summary>

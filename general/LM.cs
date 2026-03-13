@@ -311,24 +311,32 @@ public static class LM
     [MethodImpl(MethodImplOptions.Synchronized)]
     public static void ApplyLocale(bool pUpdateTexts = true)
     {
-        if (!locales.ContainsKey(LocalizedTextManager.instance.language))
+        try
         {
-            locales[LocalizedTextManager.instance.language] = new Dictionary<string, string>();
-        }
+            if (!locales.ContainsKey(LocalizedTextManager.instance.language))
+            {
+                locales[LocalizedTextManager.instance.language] = new Dictionary<string, string>();
+            }
 
-        foreach (var (key, value) in locales[LocalizedTextManager.instance.language]
-                     .Select<KeyValuePair<string, string>, (string key, string value)>(pair => (pair.Key, pair.Value)))
+            foreach (var (key, value) in locales[LocalizedTextManager.instance.language]
+                         .Select<KeyValuePair<string, string>, (string key, string value)>(pair =>
+                             (pair.Key, pair.Value)))
+            {
+                LocalizedTextManager.instance._localized_text[key] = value;
+            }
+
+            foreach (var key in locales[CoreConstants.DefaultLocaleID].Keys
+                         .Where(key =>
+                             !LocalizedTextManager.instance._localized_text
+                                 .ContainsKey(key)))
+                LocalizedTextManager.instance._localized_text[key] = locales[CoreConstants.DefaultLocaleID][key];
+
+            if (pUpdateTexts) LocalizedTextManager.updateTexts();
+        }
+        catch (Exception e)
         {
-            LocalizedTextManager.instance._localized_text[key] = value;
+            LogService.LogError("Failed to apply NML Locales");
         }
-
-        foreach (var key in locales[CoreConstants.DefaultLocaleID].Keys
-                     .Where(key =>
-                         !LocalizedTextManager.instance._localized_text
-                             .ContainsKey(key)))
-            LocalizedTextManager.instance._localized_text[key] = locales[CoreConstants.DefaultLocaleID][key];
-
-        if (pUpdateTexts) LocalizedTextManager.updateTexts();
     }
 
     /// <summary>
