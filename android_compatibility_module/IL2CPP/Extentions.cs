@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Reflection;
+using HarmonyLib;
 using Il2CppInterop.Runtime;
 using Il2CppInterop.Runtime.InteropTypes;
 using Il2CppInterop.Runtime.InteropTypes.Arrays;
@@ -95,6 +96,46 @@ public static class Extentions
     public static string FileName(this Assembly assembly)
     {
         return Path.GetFileName(assembly.Location);
+    }
+    public static string GetInfo(this Type info)
+    {
+        string msg = "";
+        if (info.IsGenericType)
+        {
+            msg = "with generic arguments ";
+            foreach (var type in info.GetGenericArguments())
+            {
+                msg += type.GetInfo() + ", ";
+            }
+        }
+        return $"Type {info.FullName} from {info.Assembly.FileName()} {msg}";
+    }
+    public static string GetInfo(this CodeInstruction info)
+    {
+        string msg = "";
+        if (info.operand is MemberInfo member)
+        {
+            msg = "of ";
+            msg += member.GetInfo();
+        }
+        return $"{info} {msg}";
+    }
+    public static string GetInfo(this ParameterInfo info)
+    {
+        return $"parameter {info.Name} of {info.ParameterType.GetInfo()}";
+    }
+    public static string GetInfo(this MemberInfo info)
+    {
+        return $"member {info.Name} of {info.DeclaringType.GetInfo()}";
+    }
+    public static string GetInfo(this MethodBase info)
+    {
+        string msg = "";
+        foreach (var param in info.GetParameters())
+        {
+            msg += param.GetInfo();
+        }
+        return $"member {info.Name} of {info.DeclaringType.GetInfo()} with params {msg}";
     }
     public static WrappedBehaviour AddComponent(this GameObject gameObject, Type type)
     {
