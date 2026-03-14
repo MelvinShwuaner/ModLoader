@@ -298,7 +298,7 @@ public class MirroredAssemblies : AssemblyLoadContext
         return remapped ?? type;
     }
     /// <summary>
-    /// the Mirrored method generator which generates managed method substitutions
+    /// the Mirrored method generator which generates managed method substitutes
     /// </summary>
     public static class Generator
     {
@@ -321,19 +321,19 @@ public class MirroredAssemblies : AssemblyLoadContext
             Generators.Stages.Add(Generators.TransformFields);
             Generators.Stages.Add(Generators.EmitInstructions);
             Generators.Stages.Add(Generators.LogInfo);
-            Generators.Stages.Add(Generators.ValidateMirror);
         }
         /// <summary>
         /// Generates a Managed mirror function to an IL2CPP function. this mirror contains the original IL from the PC version
         /// </summary>
         /// <param name="original">the original il2cpp function</param>
         /// <param name="transpilers">any transpilers to be applied</param>
+        /// <param name="Stages">the Generator stages to be used. if null, default stages are used</param>
         /// <returns>the new mirror method. can be invoked with <see cref="TranspilerSupport.InvokeMirror"/></returns>
         /// <exception cref="NotSupportedException">if you try to generate a mirror from a generic method, constructor, or a method in a generic type</exception>
         /// <exception cref="MissingMethodException">if the class the method is in or the method does not exist on the PC version</exception>
-        /// <exception cref="InvalidOperationException">if a generator stage fails, or the validator flags the mirror as invalid</exception>
+        /// <exception cref="InvalidOperationException">if a generator stage fails</exception>
         /// <exception cref="InvalidDataException">if the outputed mirror has invalid IL code</exception>
-        public static MirrorData GenerateMirror(MethodBase original, List<MethodInfo> transpilers = null)
+        public static MirrorData GenerateMirror(MethodBase original, List<MethodInfo> transpilers = null, List<Generators.GeneratorStage> Stages = null)
         {
             if (original.IsGenericMethod || original.DeclaringType.IsGenericType || !(original is MethodInfo info))
             {
@@ -380,7 +380,7 @@ public class MirroredAssemblies : AssemblyLoadContext
             Data.Instructions = instructions;
             Data.Transpilers = transpilers;
             Data.Method = mirror;
-            foreach (var Stage in Generators.Stages)
+            foreach (var Stage in Stages ?? Generators.Stages)
             {
                 try
                 {
@@ -517,63 +517,6 @@ public class MirroredAssemblies : AssemblyLoadContext
                 }
                 L("return type: " + Data.Method.ReturnType.GetInfo());
                 LogService.LogInfo("|--------Mirror Debug Data Dump--------|");
-            }
-            /// <summary>
-            /// Validates the Generated Mirror. throws an exception if invalid. also 
-            /// </summary>
-            /// <exception cref="InvalidDataException">if the mirror is invalid</exception>
-            public static void ValidateMirror(GeneratorData Data)
-            {
-                bool CheckTypes(IEnumerable<Type> types)
-                {
-                    return types.All(type => CheckType(type));
-                }
-                bool CheckType(Type type)
-                {
-                    return type.Assembly != ManagedAssembly && CheckTypes(type.GetGenericArguments());
-                }
-                if (!CheckType(Data.Method.ReturnType) ||
-                    !CheckTypes(Data.Method.GetParameters().Select(p => p.ParameterType)))
-                {
-                    throw new InvalidDataException(
-                        $"Method {Data.Method.GetInfo()}  has invalid return type or parameters!");
-                }
-                int i = 0;
-                foreach (var instruct in Data.Instructions)
-                {
-                    if (instruct.opcode == OpCodes.Call || instruct.opcode == OpCodes.Callvirt)
-                    {
-                        if (instruct.operand is MethodBase method)
-                        {
-                            if (!(CheckType(method.DeclaringType) && CheckTypes(method.GetParameters().Select(p => p.ParameterType))))
-                            {
-                                throw new InvalidDataException(
-                                    $"Method {method.GetInfo()} at {i} has invalid declared type or parameters!");
-                            }
-                            if (method is MethodInfo info)
-                            {
-                                if (!CheckType(info.ReturnType))
-                                {
-                                    throw new InvalidDataException(
-                                        $"Method {method.GetInfo()} at {i} has invalid return type!");
-                                }
-                            }
-                        }
-                        else
-                        {
-                            throw new InvalidDataException($"Method at {i} {instruct.GetInfo()} is invalid!");
-                        }
-                    }
-                    else switch (instruct.operand)
-                    {
-                        case FieldInfo field when field.DeclaringType.Assembly == NativeAssembly ||
-                                                  field.DeclaringType.Assembly == ManagedAssembly:
-                            throw new InvalidDataException($"Invalid Field {field.GetInfo()} at {i}");
-                        case MemberInfo info when CheckType(info.DeclaringType):
-                            throw new InvalidDataException($"Invalid Member {info.GetInfo()} at {i}");
-                    }
-                    i++;
-                }
             }
         }
         /// <summary>
