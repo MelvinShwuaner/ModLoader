@@ -329,7 +329,7 @@ public class MirroredAssemblies : AssemblyLoadContext
         /// <param name="original">the original il2cpp function</param>
         /// <param name="transpilers">any transpilers to be applied</param>
         /// <returns>the new mirror method. can be invoked with <see cref="TranspilerSupport.InvokeMirror"/></returns>
-        /// <exception cref="NotSupportedException">if you try to generate a mirror from a generic method or a method in a generic type</exception>
+        /// <exception cref="NotSupportedException">if you try to generate a mirror from a generic method, constructor, or a method in a generic type</exception>
         /// <exception cref="MissingMethodException">if the class the method is in or the method does not exist on the PC version</exception>
         /// <exception cref="InvalidOperationException">if a generator stage fails</exception>
         /// <exception cref="InvalidDataException">if the outputed mirror has invalid IL code</exception>
@@ -339,7 +339,6 @@ public class MirroredAssemblies : AssemblyLoadContext
             {
                 throw new NotSupportedException("Constructors, Generic Methods or methods in generic types are not supported");
             }
-
             var mirrorType = ManagedAssembly.GetType(original.DeclaringType.FullName);
             if (mirrorType == null)
             {
@@ -396,7 +395,7 @@ public class MirroredAssemblies : AssemblyLoadContext
             return new MirrorData(GenerateDelegate(Data.Method), transpilers);
         }
         /// <summary>
-        /// Generates the outputed delegate.
+        /// Generates a delegate with a dynamic method
         /// </summary>
         /// <exception cref="InvalidDataException">if the IL code is invalid</exception>
         public static Delegate GenerateDelegate(DynamicMethod dm)
@@ -414,7 +413,7 @@ public class MirroredAssemblies : AssemblyLoadContext
             }
             catch (Exception ex)
             {
-                LogService.LogError($"Failed to Generate Mirror! the IL Code is Invalid! {ex}");
+                LogService.LogError($"Failed to Generate Mirror Delegate! the IL Code is Invalid! {ex}");
                 throw new InvalidDataException($"Mirror is Invalid! {ex}");
             }
         }
