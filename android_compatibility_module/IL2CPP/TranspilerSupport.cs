@@ -331,7 +331,7 @@ public class MirroredAssemblies : AssemblyLoadContext
         /// <returns>the new mirror method. can be invoked with <see cref="TranspilerSupport.InvokeMirror"/></returns>
         /// <exception cref="NotSupportedException">if you try to generate a mirror from a generic method, constructor, or a method in a generic type</exception>
         /// <exception cref="MissingMethodException">if the class the method is in or the method does not exist on the PC version</exception>
-        /// <exception cref="InvalidOperationException">if a generator stage fails</exception>
+        /// <exception cref="InvalidOperationException">if a generator stage fails, or the validator flags the mirror as invalid</exception>
         /// <exception cref="InvalidDataException">if the outputed mirror has invalid IL code</exception>
         public static MirrorData GenerateMirror(MethodBase original, List<MethodInfo> transpilers = null)
         {
