@@ -4,10 +4,7 @@ using System.Reflection.Emit;
 using System.Runtime.Loader;
 using HarmonyLib;
 using HarmonyLib.Public.Patching;
-using HarmonyLib.Tools;
-using MelonLoader;
 using MonoMod.Cil;
-using NCMS.Extensions;
 using NeoModLoader.constants;
 using NeoModLoader.services;
 using NeoModLoader.utils;
@@ -21,6 +18,7 @@ namespace NeoModLoader.AndroidCompatibilityModule.TranspilerSupport;
 public class IgnoreTranspilerSupport : Attribute
 {
 }
+
 /// <summary>
 /// Stores the Managed Replacement of an IL2CPP method and its transpilers
 /// </summary>
@@ -31,9 +29,14 @@ public class MirrorData
         Method = method;
         Transpilers = new SortedList<MethodInfo>(HarmonyUtils.SortByPriority, transpilers);
     }
-    private MirrorData() { }
+
+    private MirrorData()
+    {
+    }
+
     public readonly Delegate Method;
     internal readonly SortedList<MethodInfo> Transpilers;
+
     /// <summary>
     /// gets all transpilers applied to this Mirror
     /// </summary>
@@ -42,6 +45,7 @@ public class MirrorData
         return Transpilers.GetList();
     }
 }
+
 /// <summary>
 /// A utility which replaces IL2CPP methods with managed methods (from the PC version) for transpilers. generic methods (or methods apart of generic classes) are NOT SUPPORTED
 /// </summary>
@@ -51,30 +55,37 @@ public static class TranspilerSupport
     /// Specifies if the Support Module will log info
     /// </summary>
     public static bool DEBUG = false;
+
     /// <summary>
     /// the universal IL2CPP to Managed IL transpiler. make sure the mirror method has been generated before it runs.
     /// </summary>
-    public static readonly MethodInfo il2cpp2managed = AccessTools.Method(typeof(TranspilerSupport), nameof(IL2CPP2Managed));
-     /// <summary>
-     /// Invokes a Mirror by its IL2CPP function. throws an exception if doesnt exist
-     /// </summary>
+    public static readonly MethodInfo il2cpp2managed =
+        AccessTools.Method(typeof(TranspilerSupport), nameof(IL2CPP2Managed));
+
+    /// <summary>
+    /// Invokes a Mirror by its IL2CPP function. throws an exception if doesnt exist
+    /// </summary>
     public static object InvokeMirror(MethodBase original, object[] args)
     {
         if (original == null)
         {
             LogService.LogInfo("original is null!");
         }
+
         MirrorData Data = MirroredAssemblies.GetMirror(original);
         if (Data == null)
         {
             throw new ArgumentException("The Method doesnt have a Mirror Method!");
         }
+
         if (Data.Method == null)
         {
             LogService.LogInfo("delegate is null!");
         }
+
         return Data.Method.DynamicInvoke(args);
     }
+
     internal static void Initialize(Harmony harmony)
     {
         MirroredAssemblies.Init();
@@ -82,13 +93,15 @@ public static class TranspilerSupport
         MirroredAssemblies.ManagedAssembly = MirroredAssemblies.LoadMirrorAssembly(Paths.PublicizedAssemblyPath);
         MirroredAssemblies.NativeAssembly = typeof(Actor).Assembly;
         harmony.Patch(
-            AccessTools.Method(typeof(HarmonyManipulator), nameof(HarmonyManipulator.Manipulate), new []{typeof(MethodBase), typeof(PatchInfo), typeof(ILContext)}),
+            AccessTools.Method(typeof(HarmonyManipulator), nameof(HarmonyManipulator.Manipulate),
+                new[] { typeof(MethodBase), typeof(PatchInfo), typeof(ILContext) }),
             new HarmonyMethod(typeof(TranspilerSupport), nameof(PatchPrefix))
         );
         var GetField = AccessTools.Method(typeof(AccessTools), nameof(AccessTools.Field),
             new[] { typeof(Type), typeof(string) });
         harmony.Patch(GetField, new HarmonyMethod(ManagedField));
     }
+
     static void ManagedField(ref Type type)
     {
         if (type.Assembly.FileName() == "Assembly-CSharp.dll")
@@ -96,6 +109,7 @@ public static class TranspilerSupport
             type = MirroredAssemblies.RemapType(type, MirroredAssemblies.ManagedAssembly);
         }
     }
+
     /// <summary>
     ///  Generates a mirror method for your transpiler and replaces <see cref="transpiler"/> with the IL2CPP2Managed transpiler or null if already patched
     /// </summary>
@@ -109,6 +123,7 @@ public static class TranspilerSupport
         {
             return;
         }
+
         if (!MirroredAssemblies.Mirrors.TryGetValue(original, out MirrorData data))
         {
             data = MirroredAssemblies.Generator.GenerateMirror(original, [transpiler]);
@@ -119,20 +134,24 @@ public static class TranspilerSupport
         {
             var transpilers = data.Transpilers;
             transpilers.Add(transpiler);
-            MirroredAssemblies.Mirrors[original] = MirroredAssemblies.Generator.GenerateMirror(original, transpilers.GetList());
+            MirroredAssemblies.Mirrors[original] =
+                MirroredAssemblies.Generator.GenerateMirror(original, transpilers.GetList());
             transpiler = null;
         }
     }
+
     private static void PatchPrefix(MethodBase original, PatchInfo patchInfo)
     {
         if (original?.DeclaringType == null || !ShouldRedirect(original))
         {
             return;
         }
+
         if (patchInfo.transpilers == null || patchInfo.transpilers.Length == 0)
         {
             return;
         }
+
         for (int i = 0; i < patchInfo.transpilers.Length; i++)
         {
             MethodInfo transpiler = patchInfo.transpilers[i].PatchMethod;
@@ -145,12 +164,15 @@ public static class TranspilerSupport
                 patchInfo.transpilers[i].PatchMethod = transpiler;
         }
     }
+
     private static bool ShouldRedirect(MethodBase method)
     {
         return method.DeclaringType.Assembly.FileName() == "Assembly-CSharp.dll";
     }
+
     [IgnoreTranspilerSupport]
-    private static IEnumerable<CodeInstruction> IL2CPP2Managed(IEnumerable<CodeInstruction> instructions, MethodBase original, ILGenerator generator)
+    private static IEnumerable<CodeInstruction> IL2CPP2Managed(IEnumerable<CodeInstruction> instructions,
+        MethodBase original, ILGenerator generator)
     {
         var code = new List<CodeInstruction>();
 
@@ -216,9 +238,11 @@ public static class TranspilerSupport
         return code;
     }
 }
+
 public class MirroredAssemblies : AssemblyLoadContext
 {
     internal static Dictionary<MethodBase, MirrorData> Mirrors = new();
+
     /// <summary>
     /// gets the mirror of a method from assembly-csharp, null if not found
     /// </summary>
@@ -226,30 +250,40 @@ public class MirroredAssemblies : AssemblyLoadContext
     {
         return Mirrors.GetValueOrDefault(Method);
     }
+
     /// <summary>
     /// the assembly from the PC version
     /// </summary>
     public static Assembly ManagedAssembly { get; internal set; }
+
     /// <summary>
     /// the IL2CPP Assembly
     /// </summary>
     public static Assembly NativeAssembly { get; internal set; }
-    public MirroredAssemblies() : base("MirrorContext", isCollectible: true) { }
+
+    public MirroredAssemblies() : base("MirrorContext", isCollectible: true)
+    {
+    }
 
     protected override Assembly Load(AssemblyName assemblyName) => null;
     private static MirroredAssemblies Instance;
-    internal static void Init(){
-        Instance = new  MirroredAssemblies();
+
+    internal static void Init()
+    {
+        Instance = new MirroredAssemblies();
     }
+
     public static Assembly LoadMirrorAssembly(string path)
     {
         return Instance.LoadFromAssemblyPath(Path.GetFullPath(path));
     }
+
     public static void Destroy()
     {
         Instance.Unload();
         Instance = null;
     }
+
     public static Type RemapType(Type type, Assembly targetAssembly, Type nativeDeclaringType = null)
     {
         if (type == null)
@@ -280,6 +314,7 @@ public class MirroredAssemblies : AssemblyLoadContext
                 if (index >= 0)
                     result = nativeDeclaringType.GetGenericArguments()[index];
             }
+
             return result;
         }
 
@@ -297,6 +332,7 @@ public class MirroredAssemblies : AssemblyLoadContext
         var remapped = targetAssembly.GetType(type.FullName);
         return remapped ?? type;
     }
+
     /// <summary>
     /// the Mirrored method generator which generates managed method substitutes
     /// </summary>
@@ -314,6 +350,7 @@ public class MirroredAssemblies : AssemblyLoadContext
             public MethodInfo OriginalMethod;
             public DynamicMethod Method;
         }
+
         internal static void Init()
         {
             Generators.Stages.Add(Generators.RemapOperands);
@@ -322,6 +359,7 @@ public class MirroredAssemblies : AssemblyLoadContext
             Generators.Stages.Add(Generators.EmitInstructions);
             Generators.Stages.Add(Generators.LogInfo);
         }
+
         /// <summary>
         /// Generates a Managed mirror function to an IL2CPP function. this mirror contains the original IL from the PC version
         /// </summary>
@@ -333,12 +371,15 @@ public class MirroredAssemblies : AssemblyLoadContext
         /// <exception cref="MissingMethodException">if the class the method is in or the method does not exist on the PC version</exception>
         /// <exception cref="InvalidOperationException">if a generator stage fails</exception>
         /// <exception cref="InvalidDataException">if the outputed mirror has invalid IL code</exception>
-        public static MirrorData GenerateMirror(MethodBase original, List<MethodInfo> transpilers = null, List<Generators.GeneratorStage> Stages = null)
+        public static MirrorData GenerateMirror(MethodBase original, List<MethodInfo> transpilers = null,
+            List<Generators.GeneratorStage> Stages = null)
         {
             if (original.IsGenericMethod || original.DeclaringType.IsGenericType || !(original is MethodInfo info))
             {
-                throw new NotSupportedException("Constructors, Generic Methods or methods in generic types are not supported");
+                throw new NotSupportedException(
+                    "Constructors, Generic Methods or methods in generic types are not supported");
             }
+
             var mirrorType = ManagedAssembly.GetType(original.DeclaringType.FullName);
             if (mirrorType == null)
             {
@@ -364,6 +405,7 @@ public class MirroredAssemblies : AssemblyLoadContext
             {
                 throw new MissingMethodException("The Managed method does not exist!");
             }
+
             DynamicMethod mirror = new DynamicMethod(
                 original.Name + "_managed",
                 RemapType(mirrorMethod.ReturnType, NativeAssembly),
@@ -388,12 +430,15 @@ public class MirroredAssemblies : AssemblyLoadContext
                 }
                 catch (Exception e)
                 {
-                   LogService.LogError($"Mirror Method Generator encountered an error at stage {Stage.Method.Name}, with Exception {e.Message} at {e.StackTrace}");
-                   throw new InvalidOperationException(e.Message);
+                    LogService.LogError(
+                        $"Mirror Method Generator encountered an error at stage {Stage.Method.Name}, with Exception {e.Message} at {e.StackTrace}");
+                    throw new InvalidOperationException(e.Message);
                 }
             }
+
             return new MirrorData(GenerateDelegate(Data.Method), transpilers);
         }
+
         /// <summary>
         /// Generates a delegate with a dynamic method
         /// </summary>
@@ -417,6 +462,7 @@ public class MirroredAssemblies : AssemblyLoadContext
                 throw new InvalidDataException($"Mirror is Invalid! {ex}");
             }
         }
+
         /// <summary>
         /// class containing all default stages for generating mirror methods
         /// </summary>
@@ -426,7 +472,9 @@ public class MirroredAssemblies : AssemblyLoadContext
             /// a stage of mirror function generation
             /// </summary>
             public delegate void GeneratorStage(GeneratorData Data);
+
             public static List<GeneratorStage> Stages = new();
+
             public static void RemapOperands(GeneratorData Data)
             {
                 foreach (var t in Data.Instructions)
@@ -434,15 +482,18 @@ public class MirroredAssemblies : AssemblyLoadContext
                     t.operand = RemapOperand(t.operand);
                 }
             }
+
             public static void InvokeTranspilers(GeneratorData Data)
             {
                 if (Data.Transpilers == null) return;
                 foreach (var transpiler in Data.Transpilers)
                 {
-                    Data.Instructions = HarmonyUtils.InvokeTranspiler(transpiler, Data.Instructions, Data.Generator, Data.OriginalMethod)
+                    Data.Instructions = HarmonyUtils.InvokeTranspiler(transpiler, Data.Instructions, Data.Generator,
+                            Data.OriginalMethod)
                         .ToList();
                 }
             }
+
             public static void EmitInstructions(GeneratorData Data)
             {
                 var locals = Data.MirrorMethod.GetMethodBody()?.LocalVariables ?? [];
@@ -452,7 +503,9 @@ public class MirroredAssemblies : AssemblyLoadContext
                     var newLocal = Data.Generator.DeclareLocal(RemapType(local.LocalType, NativeAssembly));
                     localMap[local.LocalIndex] = newLocal;
                 }
+
                 var labelMap = new Dictionary<Label, Label>();
+
                 Label GetOrCreateLabel(Label old)
                 {
                     if (!labelMap.TryGetValue(old, out var newLabel))
@@ -460,8 +513,10 @@ public class MirroredAssemblies : AssemblyLoadContext
                         newLabel = Data.Generator.DefineLabel();
                         labelMap[old] = newLabel;
                     }
+
                     return newLabel;
                 }
+
                 foreach (var instr in Data.Instructions)
                 {
                     foreach (var label in instr.labels)
@@ -476,6 +531,7 @@ public class MirroredAssemblies : AssemblyLoadContext
                     Data.Generator.Emit(instr.opcode, instr.operand);
                 }
             }
+
             public static void TransformFields(GeneratorData Data)
             {
                 foreach (var instr in Data.Instructions)
@@ -483,21 +539,24 @@ public class MirroredAssemblies : AssemblyLoadContext
                     TransformField(ref instr.opcode, ref instr.operand);
                 }
             }
+
             public static void LogInfo(GeneratorData Data)
             {
                 void L(string msg)
                 {
                     MelonHelper.Log(msg);
                 }
+
                 if (!TranspilerSupport.DEBUG)
                 {
                     LogService.LogInfo("Not logging debug mirror info");
                     return;
                 }
+
                 LogService.LogInfo("|--------Mirror Debug Data Dump--------|");
                 L($"Original Method: {Data.OriginalMethod.GetInfo()}");
                 L("return type: " + Data.OriginalMethod.ReturnType.GetInfo());
-                
+
                 L($"Mirror Method: {Data.MirrorMethod.GetInfo()}");
                 L("return type: " + Data.MirrorMethod.ReturnType.GetInfo());
                 L("|------Instructions-----|");
@@ -507,6 +566,7 @@ public class MirroredAssemblies : AssemblyLoadContext
                     L($"{i} : {instr.GetInfo()}");
                     i++;
                 }
+
                 L($"Dynamic Method: {Data.Method.GetInfo()}");
                 L("|------Instructions-----|");
                 i = 0;
@@ -515,10 +575,12 @@ public class MirroredAssemblies : AssemblyLoadContext
                     L($"{i} : {instr.GetInfo()}");
                     i++;
                 }
+
                 L("return type: " + Data.Method.ReturnType.GetInfo());
                 LogService.LogInfo("|--------Mirror Debug Data Dump--------|");
             }
         }
+
         /// <summary>
         /// Transforms a Field into a getter / setter method
         /// </summary>
@@ -548,78 +610,79 @@ public class MirroredAssemblies : AssemblyLoadContext
 
             return true;
         }
+
         private static object RemapOperand(object operand)
-    {
-        Type nativeDeclType;
-        Type RemapOperandType(Type t) => RemapType(t, NativeAssembly, nativeDeclType);
-        switch (operand)
-        { 
-            case MethodInfo m when m.DeclaringType?.Assembly == ManagedAssembly:
+        {
+            Type nativeDeclType;
+            Type RemapOperandType(Type t) => RemapType(t, NativeAssembly, nativeDeclType);
+            switch (operand)
             {
-                nativeDeclType = RemapType(m.DeclaringType, NativeAssembly);
-                // Find method definition (ignore generic args)
-                var candidates = nativeDeclType.GetMethods(
-                    BindingFlags.Public | BindingFlags.NonPublic |
-                    BindingFlags.Instance | BindingFlags.Static);
-                MethodInfo method = candidates.FirstOrDefault(x =>
+                case MethodInfo m when m.DeclaringType?.Assembly == ManagedAssembly:
                 {
-                    if (x.Name != m.Name)
-                        return false;
-
-                    var mp = x.GetParameters();
-                    var op = m.GetParameters();
-
-                    if (mp.Length != op.Length)
-                        return false;
-
-                    for (int i = 0; i < mp.Length; i++)
+                    nativeDeclType = RemapType(m.DeclaringType, NativeAssembly);
+                    // Find method definition (ignore generic args)
+                    var candidates = nativeDeclType.GetMethods(
+                        BindingFlags.Public | BindingFlags.NonPublic |
+                        BindingFlags.Instance | BindingFlags.Static);
+                    MethodInfo method = candidates.FirstOrDefault(x =>
                     {
-                        var t1 = RemapOperandType(op[i].ParameterType);
-                        var t2 = mp[i].ParameterType;
+                        if (x.Name != m.Name)
+                            return false;
 
-                        // Compare generic definitions if necessary
-                        if (t2.IsGenericParameter)
-                            continue;
+                        var mp = x.GetParameters();
+                        var op = m.GetParameters();
 
-                        if (t1.IsGenericType && t2.IsGenericType)
+                        if (mp.Length != op.Length)
+                            return false;
+
+                        for (int i = 0; i < mp.Length; i++)
                         {
-                            if (t1.GetGenericTypeDefinition() != t2.GetGenericTypeDefinition())
+                            var t1 = RemapOperandType(op[i].ParameterType);
+                            var t2 = mp[i].ParameterType;
+
+                            // Compare generic definitions if necessary
+                            if (t2.IsGenericParameter)
+                                continue;
+
+                            if (t1.IsGenericType && t2.IsGenericType)
+                            {
+                                if (t1.GetGenericTypeDefinition() != t2.GetGenericTypeDefinition())
+                                    return false;
+                            }
+                            else if (t1 != t2)
                                 return false;
                         }
-                        else if (t1 != t2)
-                            return false;
+
+                        return true;
+                    });
+                    if (method == null)
+                        throw new Exception($"Failed to remap method: {m}");
+                    // Reconstruct generic method
+                    if (m.IsGenericMethod)
+                    {
+                        var genericArgs = m.GetGenericArguments()
+                            .Select(RemapOperandType)
+                            .ToArray();
+
+                        method = method.MakeGenericMethod(genericArgs);
                     }
 
-                    return true;
-                });
-                if (method == null)
-                    throw new Exception($"Failed to remap method: {m}");
-                // Reconstruct generic method
-                if (m.IsGenericMethod)
+                    return method;
+                }
+                case ConstructorInfo c when c.DeclaringType?.Assembly == ManagedAssembly:
                 {
-                    var genericArgs = m.GetGenericArguments()
-                        .Select(RemapOperandType)
+                    nativeDeclType = RemapType(c.DeclaringType, NativeAssembly);
+                    var paramTypes = c.GetParameters()
+                        .Select(p => RemapOperandType(p.ParameterType))
                         .ToArray();
 
-                    method = method.MakeGenericMethod(genericArgs);
+                    return AccessTools.Constructor(nativeDeclType, paramTypes);
                 }
-
-                return method;
+                case Type t when t.Assembly == ManagedAssembly:
+                    return RemapType(t, NativeAssembly);
+                default:
+                    return operand;
             }
-            case ConstructorInfo c when c.DeclaringType?.Assembly == ManagedAssembly:
-            {
-                 nativeDeclType = RemapType(c.DeclaringType, NativeAssembly);
-                var paramTypes = c.GetParameters()
-                    .Select(p => RemapOperandType(p.ParameterType))
-                    .ToArray();
-
-                return AccessTools.Constructor(nativeDeclType, paramTypes);
-            }
-            case Type t when t.Assembly == ManagedAssembly:
-                return RemapType(t, NativeAssembly);
-            default:
-                return operand;
         }
-    }
     }
 }
