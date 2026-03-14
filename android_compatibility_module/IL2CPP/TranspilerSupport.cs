@@ -47,16 +47,31 @@ public class MirrorData
 /// </summary>
 public static class TranspilerSupport
 {
-    private static MethodInfo il2cpp2managed = AccessTools.Method(typeof(TranspilerSupport), nameof(TranspilerSupport.IL2CPP2Managed));
+    /// <summary>
+    /// Specifies if the Support Module will log info
+    /// </summary>
+    public static bool DEBUG = false;
+    /// <summary>
+    /// the universal IL2CPP to Managed IL transpiler. make sure the mirror method has been generated before it runs.
+    /// </summary>
+    public static readonly MethodInfo il2cpp2managed = AccessTools.Method(typeof(TranspilerSupport), nameof(IL2CPP2Managed));
      /// <summary>
      /// Invokes a Mirror by its IL2CPP function. throws an exception if doesnt exist
      /// </summary>
     public static object InvokeMirror(MethodBase original, object[] args)
     {
+        if (original == null)
+        {
+            LogService.LogInfo("original is null!");
+        }
         MirrorData Data = MirroredAssemblies.GetMirror(original);
         if (Data == null)
         {
             throw new ArgumentException("The Method doesnt have a Mirror Method!");
+        }
+        if (Data.Method == null)
+        {
+            LogService.LogInfo("delegate is null!");
         }
         return Data.Method.DynamicInvoke(args);
     }
@@ -290,7 +305,7 @@ public class MirroredAssemblies : AssemblyLoadContext
         /// <summary>
         /// Temporary data used for generating mirror methods
         /// </summary>
-        public struct GeneratorData
+        public class GeneratorData
         {
             public List<CodeInstruction> Instructions;
             public ILGenerator Generator;
@@ -298,18 +313,15 @@ public class MirroredAssemblies : AssemblyLoadContext
             public MethodInfo MirrorMethod;
             public MethodInfo OriginalMethod;
             public DynamicMethod Method;
-            public Delegate Output;
         }
         internal static void Init()
         {
             Generators.Stages.Add(Generators.RemapOperands);
-            Generators.Stages.Add(Generators.DeclareLocals);
             Generators.Stages.Add(Generators.InvokeTranspilers);
             Generators.Stages.Add(Generators.TransformFields);
             Generators.Stages.Add(Generators.EmitInstructions);
             Generators.Stages.Add(Generators.LogInfo);
             Generators.Stages.Add(Generators.ValidateMirror);
-            Generators.Stages.Add(Generators.GenerateDelegate);
         }
         /// <summary>
         /// Generates a Managed mirror function to an IL2CPP function. this mirror contains the original IL from the PC version
@@ -319,7 +331,8 @@ public class MirroredAssemblies : AssemblyLoadContext
         /// <returns>the new mirror method. can be invoked with <see cref="TranspilerSupport.InvokeMirror"/></returns>
         /// <exception cref="NotSupportedException">if you try to generate a mirror from a generic method or a method in a generic type</exception>
         /// <exception cref="MissingMethodException">if the class the method is in or the method does not exist on the PC version</exception>
-        /// <exception cref="InvalidOperationException">if the generator fails to generate the mirror</exception>
+        /// <exception cref="InvalidOperationException">if a generator stage fails</exception>
+        /// <exception cref="InvalidDataException">if the outputed mirror has invalid IL code</exception>
         public static MirrorData GenerateMirror(MethodBase original, List<MethodInfo> transpilers = null)
         {
             if (original.IsGenericMethod || original.DeclaringType.IsGenericType || !(original is MethodInfo info))
@@ -376,10 +389,34 @@ public class MirroredAssemblies : AssemblyLoadContext
                 }
                 catch (Exception e)
                 {
-                    throw new InvalidOperationException($"Mirror Method Generator encountered an error at stage {Stage.Method.Name}, with Exception {e.Message} at {e.StackTrace}");
+                   LogService.LogError($"Mirror Method Generator encountered an error at stage {Stage.Method.Name}, with Exception {e.Message} at {e.StackTrace}");
+                   throw new InvalidOperationException(e.Message);
                 }
             }
-            return new MirrorData(Data.Output, transpilers);
+            return new MirrorData(GenerateDelegate(Data.Method), transpilers);
+        }
+        /// <summary>
+        /// Generates the outputed delegate.
+        /// </summary>
+        /// <exception cref="InvalidDataException">if the IL code is invalid</exception>
+        public static Delegate GenerateDelegate(DynamicMethod dm)
+        {
+            try
+            {
+                var paramTypes = dm.GetParameters().Select(p => p.ParameterType).ToArray();
+                var returnType = dm.ReturnType;
+
+                var delegateType = returnType == typeof(void)
+                    ? Expression.GetActionType(paramTypes)
+                    : Expression.GetFuncType(paramTypes.Append(returnType).ToArray());
+
+                return dm.CreateDelegate(delegateType);
+            }
+            catch (Exception ex)
+            {
+                LogService.LogError($"Failed to Generate Mirror! the IL Code is Invalid! {ex}");
+                throw new InvalidDataException($"Mirror is Invalid! {ex}");
+            }
         }
         /// <summary>
         /// class containing all default stages for generating mirror methods
@@ -407,7 +444,7 @@ public class MirroredAssemblies : AssemblyLoadContext
                         .ToList();
                 }
             }
-            public static void DeclareLocals(GeneratorData Data)
+            public static void EmitInstructions(GeneratorData Data)
             {
                 var locals = Data.MirrorMethod.GetMethodBody()?.LocalVariables ?? [];
                 var localMap = new Dictionary<int, LocalBuilder>();
@@ -437,6 +474,7 @@ public class MirroredAssemblies : AssemblyLoadContext
                         Label[] lbls => lbls.Select(GetOrCreateLabel).ToArray(),
                         _ => instr.operand
                     };
+                    Data.Generator.Emit(instr.opcode, instr.operand);
                 }
             }
             public static void TransformFields(GeneratorData Data)
@@ -446,36 +484,22 @@ public class MirroredAssemblies : AssemblyLoadContext
                     TransformField(ref instr.opcode, ref instr.operand);
                 }
             }
-            public static void EmitInstructions(GeneratorData Data)
-            {
-                foreach (var instr in Data.Instructions)
-                {
-                    Data.Generator.Emit(instr.opcode, instr.operand);
-                }
-            }
             public static void LogInfo(GeneratorData Data)
             {
                 void L(string msg)
                 {
                     MelonHelper.Log(msg);
                 }
-                if (!HarmonyFileLog.Enabled)
+                if (!TranspilerSupport.DEBUG)
                 {
                     LogService.LogInfo("Not logging debug mirror info");
                     return;
                 }
                 LogService.LogInfo("|--------Mirror Debug Data Dump--------|");
                 L($"Original Method: {Data.OriginalMethod.GetInfo()}");
-                foreach (var param in Data.OriginalMethod.GetParameters())
-                {
-                    L("param:" + param.GetInfo());
-                }
                 L("return type: " + Data.OriginalMethod.ReturnType.GetInfo());
+                
                 L($"Mirror Method: {Data.MirrorMethod.GetInfo()}");
-                foreach (var param in Data.MirrorMethod.GetParameters())
-                {
-                    L("param:" + param.GetInfo());
-                }
                 L("return type: " + Data.MirrorMethod.ReturnType.GetInfo());
                 L("|------Instructions-----|");
                 int i = 0;
@@ -485,10 +509,6 @@ public class MirroredAssemblies : AssemblyLoadContext
                     i++;
                 }
                 L($"Dynamic Method: {Data.Method.GetInfo()}");
-                foreach (var param in Data.Method.GetParameters())
-                {
-                    L("param:" + param.GetInfo());
-                }
                 L("|------Instructions-----|");
                 i = 0;
                 foreach (var instr in Data.Instructions)
@@ -554,28 +574,6 @@ public class MirroredAssemblies : AssemblyLoadContext
                             throw new InvalidDataException($"Invalid Member {info.GetInfo()} at {i}");
                     }
                     i++;
-                }
-            }
-            /// <summary>
-            /// Generates the outputed delegate.
-            /// </summary>
-            public static void GenerateDelegate(GeneratorData Data)
-            {
-                var dm = Data.Method;
-                try
-                {
-                    var paramTypes = dm.GetParameters().Select(p => p.ParameterType).ToArray();
-                    var returnType = dm.ReturnType;
-
-                    var delegateType = returnType == typeof(void)
-                        ? Expression.GetActionType(paramTypes)
-                        : Expression.GetFuncType(paramTypes.Append(returnType).ToArray());
-
-                    Data.Output = dm.CreateDelegate(delegateType);
-                }
-                catch (Exception ex)
-                {
-                    throw new InvalidDataException($"Mirror is Invalid! {ex}");
                 }
             }
         }

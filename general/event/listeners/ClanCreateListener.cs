@@ -53,8 +53,8 @@ public class ClanCreateListener : AbstractListener<ClanCreateListener, ClanCreat
     {
         List<CodeInstruction> codes = new(instr);
 
-        int insert_index = 6;
-        codes.Insert(insert_index++, new CodeInstruction(OpCodes.Dup));
+        int insert_index = 45;
+        codes.Insert(insert_index++, new CodeInstruction(OpCodes.Ldloc_0));
         codes.Insert(insert_index++, new CodeInstruction(OpCodes.Ldarg_1));
         
         InsertCallHandleCode(codes, insert_index);

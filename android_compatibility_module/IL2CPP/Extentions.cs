@@ -99,6 +99,10 @@ public static class Extentions
     }
     public static string GetInfo(this Type info)
     {
+        if (info == null)
+        {
+            return "Null Type";
+        }
         string msg = "";
         if (info.IsGenericType)
         {
