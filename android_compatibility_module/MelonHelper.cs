@@ -1,5 +1,4 @@
 using HarmonyLib;
-using NeoModLoader.AndroidCompatibilityModule.TranspilerSupport;
 using NeoModLoader.constants;
 
 namespace NeoModLoader.AndroidCompatibilityModule;

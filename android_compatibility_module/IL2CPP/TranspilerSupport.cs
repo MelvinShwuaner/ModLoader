@@ -259,7 +259,7 @@ public class MirroredAssemblies : AssemblyLoadContext
     /// </summary>
     public static Assembly NativeAssembly { get; internal set; }
 
-    public MirroredAssemblies() : base("MirrorContext", isCollectible: true)
+    private MirroredAssemblies() : base("MirrorContext", isCollectible: true)
     {
     }
 
