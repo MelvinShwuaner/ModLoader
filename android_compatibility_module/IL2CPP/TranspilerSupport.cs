@@ -132,10 +132,8 @@ public static class TranspilerSupport
         }
         else
         {
-            var transpilers = data.Transpilers;
-            transpilers.Add(transpiler);
-            MirroredAssemblies.Mirrors[original] =
-                MirroredAssemblies.Generator.GenerateMirror(original, transpilers.GetList());
+            data.Transpilers.Add(transpiler);
+            MirroredAssemblies.Mirrors[original] = MirroredAssemblies.Generator.GenerateMirror(original, data.Transpilers.GetList());
             transpiler = null;
         }
     }
