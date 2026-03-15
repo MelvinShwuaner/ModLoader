@@ -89,9 +89,6 @@ public static class TranspilerSupport
     internal static void Initialize(Harmony harmony)
     {
         MirroredAssemblies.Init();
-        MirroredAssemblies.Generator.Init();
-        MirroredAssemblies.ManagedAssembly = MirroredAssemblies.LoadMirrorAssembly(Paths.PublicizedAssemblyPath);
-        MirroredAssemblies.NativeAssembly = typeof(Actor).Assembly;
         harmony.Patch(
             AccessTools.Method(typeof(HarmonyManipulator), nameof(HarmonyManipulator.Manipulate),
                 new[] { typeof(MethodBase), typeof(PatchInfo), typeof(ILContext) }),
@@ -104,14 +101,14 @@ public static class TranspilerSupport
 
     static void ManagedField(ref Type type)
     {
-        if (type.Assembly.FileName() == "Assembly-CSharp.dll")
+        if (MirroredAssemblies.TryGetNative(type.Assembly, out Assembly native))
         {
-            type = MirroredAssemblies.RemapType(type, MirroredAssemblies.ManagedAssembly);
+            type = MirroredAssemblies.RemapType(type, native);
         }
     }
 
     /// <summary>
-    ///  Generates a mirror method for your transpiler and replaces <see cref="transpiler"/> with the IL2CPP2Managed transpiler or null if already patched
+    ///  Generates a mirror method for your transpiler and replaces the transpiler param with the IL2CPP2Managed transpiler or null if already patched
     /// </summary>
     /// <param name="original">the method to transpile</param>
     /// <param name="transpiler">your transpiler</param>
@@ -236,7 +233,10 @@ public static class TranspilerSupport
         return code;
     }
 }
-
+/// <summary>
+/// The Managed mirrored assemblies, all loaded in a separate context. this is where all the mirror methods are stored and generated from.
+/// </summary>
+/// <remarks> also contains the mapping between IL2CPP and Managed types for field transformation and operand remapping</remarks>
 public class MirroredAssemblies : AssemblyLoadContext
 {
     internal static Dictionary<MethodBase, MirrorData> Mirrors = new();
@@ -258,28 +258,47 @@ public class MirroredAssemblies : AssemblyLoadContext
     /// the IL2CPP Assembly
     /// </summary>
     public static Assembly NativeAssembly { get; internal set; }
-
-    private MirroredAssemblies() : base("MirrorContext", isCollectible: true)
+    static Dictionary<Assembly, Assembly> StubToNativeMap = [];
+    public static bool TryGetNative(Assembly Managed, out Assembly Native)
+    {
+        return StubToNativeMap.TryGetValue(Managed, out Native);
+    }
+    private MirroredAssemblies() : base("ManagedAssemblies", isCollectible: false)
     {
     }
 
     protected override Assembly Load(AssemblyName assemblyName) => null;
     private static MirroredAssemblies Instance;
-
+    public static bool IsManaged(Assembly Assembly)
+    {
+        return Assembly != null && ( Assembly == ManagedAssembly || StubToNativeMap.ContainsKey(Assembly));
+    }
     internal static void Init()
     {
         Instance = new MirroredAssemblies();
+        ManagedAssembly = LoadMirrorAssembly(Paths.PublicizedAssemblyPath);
+        foreach (var path in Directory.GetFiles(Paths.ManagedPath, "*.dll"))
+        {
+            LogService.LogInfo(path);
+           Assembly stub =  LoadMirrorAssembly(path);
+            string name = stub.GetName().Name;
+            Assembly native = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == name);
+            if (native != null)
+            {
+                StubToNativeMap.Add(stub, native);
+            }
+            else
+            {
+                LogService.LogWarning($"Failed to find native assembly for {name}");
+            }
+        }
+        NativeAssembly = typeof(Actor).Assembly;
+        Generator.Init();
     }
 
     public static Assembly LoadMirrorAssembly(string path)
     {
         return Instance.LoadFromAssemblyPath(Path.GetFullPath(path));
-    }
-
-    public static void Destroy()
-    {
-        Instance.Unload();
-        Instance = null;
     }
 
     public static Type RemapType(Type type, Assembly targetAssembly, Type nativeDeclaringType = null)
@@ -290,6 +309,10 @@ public class MirroredAssemblies : AssemblyLoadContext
         if (type.Assembly == targetAssembly)
             return type;
 
+        if (StubToNativeMap.TryGetValue(type.Assembly, out Assembly native) && native != targetAssembly){
+            return RemapType(type, native, nativeDeclaringType);
+        }
+      
         if (type.IsByRef)
             return RemapType(type.GetElementType(), targetAssembly, nativeDeclaringType).MakeByRefType();
 
@@ -608,14 +631,13 @@ public class MirroredAssemblies : AssemblyLoadContext
 
             return true;
         }
-
         private static object RemapOperand(object operand)
         {
             Type nativeDeclType;
             Type RemapOperandType(Type t) => RemapType(t, NativeAssembly, nativeDeclType);
             switch (operand)
             {
-                case MethodInfo m when m.DeclaringType?.Assembly == ManagedAssembly:
+                case MethodInfo m when IsManaged(m.DeclaringType?.Assembly):
                 {
                     nativeDeclType = RemapType(m.DeclaringType, NativeAssembly);
                     // Find method definition (ignore generic args)
@@ -667,7 +689,7 @@ public class MirroredAssemblies : AssemblyLoadContext
 
                     return method;
                 }
-                case ConstructorInfo c when c.DeclaringType?.Assembly == ManagedAssembly:
+                case ConstructorInfo c when IsManaged(c.DeclaringType?.Assembly):
                 {
                     nativeDeclType = RemapType(c.DeclaringType, NativeAssembly);
                     var paramTypes = c.GetParameters()
@@ -676,7 +698,7 @@ public class MirroredAssemblies : AssemblyLoadContext
 
                     return AccessTools.Constructor(nativeDeclType, paramTypes);
                 }
-                case Type t when t.Assembly == ManagedAssembly:
+                case Type t when IsManaged(t.Assembly):
                     return RemapType(t, NativeAssembly);
                 default:
                     return operand;

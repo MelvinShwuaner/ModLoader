@@ -269,11 +269,15 @@ public static class ModCompileLoadService
         }
 
         var default_ref_path_list = new List<string>();
-        default_ref_path_list.AddRange(Directory.GetFiles(Paths.ManagedPath, "*.dll"));
         default_ref_path_list.AddRange(Directory.GetFiles(Paths.NMLAssembliesPath, "*.dll"));
         if (Config.isAndroid)
         {
             default_ref_path_list.AddRange(Directory.GetFiles(Paths.MelonAssemblies, "*.dll"));
+            default_ref_path_list.AddRange(Directory.GetFiles(Paths.Il2CppAssemblies, "*.dll"));
+        }
+        else
+        {
+            default_ref_path_list.AddRange(Directory.GetFiles(Paths.ManagedPath, "*.dll"));
         }
         default_ref_path_list.Add(Paths.NMLModPath);
         _default_ref_path = default_ref_path_list.ToArray();
@@ -291,10 +295,9 @@ public static class ModCompileLoadService
                 LogService.LogError($"Error when load default reference {_default_ref_path[i]}: {e.Message}");
             }
         }
-
         if (Config.isAndroid)
         {
-            _default_ref = _default_ref.AddRangeToArray(LoadDotNetReferencesFromApk(Paths.DotnetAPKPath).ToArray());
+            _default_ref = _default_ref.AddRangeToArray([..LoadDotNetReferencesFromApk(Paths.DotnetAPKPath)]);
         }
         _publicized_assembly_ref = MetadataReference.CreateFromFile(Paths.PublicizedAssemblyPath);
     }

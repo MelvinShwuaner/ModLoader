@@ -44,14 +44,17 @@ public static class Paths
     public static readonly string NativeModsPath = Combine(StreamingAssetsPath, Others.IsAndroid ? "mods" : "Mods");
 
     /// <summary>
-    /// Path to game native Managed folder, or IL2CPP assemblies if on android
+    /// Path to game native Managed folder,if on android these are STUB DLLS! DO NOT USE THEM!
     /// </summary>
     public static readonly string ManagedPath = !Others.IsAndroid
         ? Others.is_editor
             ? Combine(StreamingAssetsPath, "..", ".Managed")
             : Combine(StreamingAssetsPath, "..", "Managed")
-        : Combine(MelonPath, "MelonLoader", "Il2CppAssemblies");
-
+        : Combine(MelonPath, "MelonLoader", "ManagedAssemblies");
+    /// <summary>
+    /// the Il2cpp Assemblies. on android
+    /// </summary>
+    public static readonly string Il2CppAssemblies = Combine(MelonPath, "MelonLoader", "Il2CppAssemblies");
     /// <summary>
     /// Path to folder contains NML's cache
     /// </summary>
