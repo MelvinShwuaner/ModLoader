@@ -240,7 +240,6 @@ public static class ModCompileLoadService
         "System.Collections.Concurrent.dll"
         // add any additional DLLs 
     };
-    
     private static List<MetadataReference> LoadDotNetReferencesFromApk(string DotNetPathInApk)
     {
         List<MetadataReference> references = new List<MetadataReference>();

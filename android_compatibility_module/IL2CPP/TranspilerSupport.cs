@@ -1,13 +1,17 @@
-using System.Linq.Expressions;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Runtime.Loader;
 using HarmonyLib;
 using HarmonyLib.Public.Patching;
+using HarmonyLib.Tools;
+using Il2CppSystem.Runtime.Remoting.Messaging;
+using MelonLoader;
 using MonoMod.Cil;
 using NeoModLoader.constants;
 using NeoModLoader.services;
 using NeoModLoader.utils;
+using System.Linq.Expressions;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.Loader;
+using static NeoModLoader.AndroidCompatibilityModule.TranspilerSupport.TranspilerSupport;
 
 namespace NeoModLoader.AndroidCompatibilityModule.TranspilerSupport;
 
@@ -88,7 +92,7 @@ public static class TranspilerSupport
 
     internal static void Initialize(Harmony harmony)
     {
-        MirroredAssemblies.Init();
+        MirroredAssemblies.Init(AppDomain.CurrentDomain);
         harmony.Patch(
             AccessTools.Method(typeof(HarmonyManipulator), nameof(HarmonyManipulator.Manipulate),
                 new[] { typeof(MethodBase), typeof(PatchInfo), typeof(ILContext) }),
@@ -232,6 +236,13 @@ public static class TranspilerSupport
 
         return code;
     }
+    public static void Log(string msg)
+    {
+        if (DEBUG)
+        {
+            MelonLogger.Msg(msg);
+        }
+    }
 }
 /// <summary>
 /// The Managed mirrored assemblies, all loaded in a separate context. this is where all the mirror methods are stored and generated from.
@@ -248,7 +259,6 @@ public class MirroredAssemblies : AssemblyLoadContext
     {
         return Mirrors.GetValueOrDefault(Method);
     }
-
     /// <summary>
     /// the assembly from the PC version
     /// </summary>
@@ -273,16 +283,15 @@ public class MirroredAssemblies : AssemblyLoadContext
     {
         return Assembly != null && ( Assembly == ManagedAssembly || StubToNativeMap.ContainsKey(Assembly));
     }
-    internal static void Init()
+    internal static void Init(AppDomain appDomain)
     {
         Instance = new MirroredAssemblies();
         ManagedAssembly = LoadMirrorAssembly(Paths.PublicizedAssemblyPath);
         foreach (var path in Directory.GetFiles(Paths.ManagedPath, "*.dll"))
         {
-            LogService.LogInfo(path);
-           Assembly stub =  LoadMirrorAssembly(path);
+            Assembly stub = LoadMirrorAssembly(path);
             string name = stub.GetName().Name;
-            Assembly native = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == name);
+            Assembly native = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => (a.GetName().Name == name || a.GetName().Name == "Il2Cpp"+name) && a != stub);
             if (native != null)
             {
                 StubToNativeMap.Add(stub, native);
@@ -300,28 +309,27 @@ public class MirroredAssemblies : AssemblyLoadContext
     {
         return Instance.LoadFromAssemblyPath(Path.GetFullPath(path));
     }
-
-    public static Type RemapType(Type type, Assembly targetAssembly, Type nativeDeclaringType = null)
+    public static Type RemapType(Type type, Assembly targetAssembly, Type nativeDeclaringType = null, string NewName = null)
     {
         if (type == null)
             return null;
 
         if (type.Assembly == targetAssembly)
             return type;
-
         if (StubToNativeMap.TryGetValue(type.Assembly, out Assembly native) && native != targetAssembly){
+            Log($"remapped type {type.FullName} to new namespace target " + native.FullName);
             return RemapType(type, native, nativeDeclaringType);
         }
       
         if (type.IsByRef)
-            return RemapType(type.GetElementType(), targetAssembly, nativeDeclaringType).MakeByRefType();
+            return RemapType(type.GetElementType(), targetAssembly, nativeDeclaringType, NewName).MakeByRefType();
 
         if (type.IsPointer)
-            return RemapType(type.GetElementType(), targetAssembly, nativeDeclaringType).MakePointerType();
+            return RemapType(type.GetElementType(), targetAssembly, nativeDeclaringType, NewName).MakePointerType();
 
         if (type.IsArray)
         {
-            var element = RemapType(type.GetElementType(), targetAssembly, nativeDeclaringType);
+            var element = RemapType(type.GetElementType(), targetAssembly, nativeDeclaringType, NewName);
             return type.GetArrayRank() == 1 ? element.MakeArrayType() : element.MakeArrayType(type.GetArrayRank());
         }
 
@@ -342,16 +350,40 @@ public class MirroredAssemblies : AssemblyLoadContext
         if (type.IsGenericType && !type.IsGenericTypeDefinition)
         {
             var genericDef = type.GetGenericTypeDefinition();
-            var remappedDef = RemapType(genericDef, targetAssembly, nativeDeclaringType);
+            var remappedDef = RemapType(genericDef, targetAssembly, nativeDeclaringType, NewName);
             var args = type.GetGenericArguments()
-                .Select(t => RemapType(t, targetAssembly, nativeDeclaringType))
+                .Select(t => RemapType(t, targetAssembly, nativeDeclaringType, NewName))
                 .ToArray();
 
             return remappedDef.MakeGenericType(args);
         }
-
-        var remapped = targetAssembly.GetType(type.FullName);
-        return remapped ?? type;
+        if (!type.IsValueType && type != typeof(string))
+        {
+            if (type.FullName.StartsWith("System.") && targetAssembly == NativeAssembly)
+            {
+                Log($"remapped type {type.FullName} to il2cpp system");
+                return RemapType(type, null, nativeDeclaringType, "Il2Cpp" + type.FullName);
+            }
+            else if (type.FullName.StartsWith("Il2Cpp") && targetAssembly == ManagedAssembly)
+            {
+                Log($"remapped type {type.FullName} to system");
+                return RemapType(type, null, nativeDeclaringType, type.FullName[6..]);
+            }
+        }
+        var remapped = targetAssembly?.GetType(NewName ?? type.FullName);
+        return remapped ?? GetType(NewName ?? type.FullName);
+    }
+    public static Type GetType(string FullName)
+    {
+        foreach(Assembly assembly in AppDomain.CurrentDomain.GetAssemblies())
+        {
+            Type type = assembly.GetType(FullName);
+            if (type != null)
+            {
+                return type;
+            }
+        }
+        return null;
     }
 
     /// <summary>
@@ -452,7 +484,8 @@ public class MirroredAssemblies : AssemblyLoadContext
                 catch (Exception e)
                 {
                     LogService.LogError(
-                        $"Mirror Method Generator encountered an error at stage {Stage.Method.Name}, with Exception {e.Message} at {e.StackTrace}");
+                        $"Mirror Method Generator encountered an error at stage {Stage.Method.Name}, with Exception {e.Message} {e.StackTrace}");
+                    Log(Data, true);
                     throw new InvalidOperationException(e.Message);
                 }
             }
@@ -483,10 +516,45 @@ public class MirroredAssemblies : AssemblyLoadContext
                 throw new InvalidDataException($"Mirror is Invalid! {ex}");
             }
         }
-
-        public static void getilcode(MethodInfo info)
+        public static void Log(GeneratorData Data, bool Error)
         {
-            info.GetMethodBody().GetILAsByteArray();
+
+            void L(string msg)
+            {
+                MelonHelper.Log(msg);
+            }
+
+            if (!TranspilerSupport.DEBUG && !Error)
+            {
+                LogService.LogInfo("Not logging debug mirror info");
+                return;
+            }
+
+            LogService.LogInfo("|--------Mirror Debug Data Dump--------|");
+            L($"Original Method: {Data.OriginalMethod.GetInfo()}");
+            L("return type: " + Data.OriginalMethod.ReturnType.GetInfo());
+
+            L($"Mirror Method: {Data.MirrorMethod.GetInfo()}");
+            L("return type: " + Data.MirrorMethod.ReturnType.GetInfo());
+            L("|------Instructions-----|");
+            int i = 0;
+            foreach (var instr in PatchProcessor.GetOriginalInstructions(Data.MirrorMethod))
+            {
+                L($"{i} : {instr.GetInfo()}");
+                i++;
+            }
+
+            L($"Dynamic Method: {Data.Method.GetInfo()}");
+            L("|------Instructions-----|");
+            i = 0;
+            foreach (var instr in Data.Instructions)
+            {
+                L($"{i} : {instr.GetInfo()}");
+                i++;
+            }
+
+            L("return type: " + Data.Method.ReturnType.GetInfo());
+            LogService.LogInfo("|--------Mirror Debug Data Dump--------|");
         }
         /// <summary>
         /// class containing all default stages for generating mirror methods
@@ -564,45 +632,9 @@ public class MirroredAssemblies : AssemblyLoadContext
                     TransformField(ref instr.opcode, ref instr.operand);
                 }
             }
-
             public static void LogInfo(GeneratorData Data)
             {
-                void L(string msg)
-                {
-                    MelonHelper.Log(msg);
-                }
-
-                if (!TranspilerSupport.DEBUG)
-                {
-                    LogService.LogInfo("Not logging debug mirror info");
-                    return;
-                }
-
-                LogService.LogInfo("|--------Mirror Debug Data Dump--------|");
-                L($"Original Method: {Data.OriginalMethod.GetInfo()}");
-                L("return type: " + Data.OriginalMethod.ReturnType.GetInfo());
-
-                L($"Mirror Method: {Data.MirrorMethod.GetInfo()}");
-                L("return type: " + Data.MirrorMethod.ReturnType.GetInfo());
-                L("|------Instructions-----|");
-                int i = 0;
-                foreach (var instr in PatchProcessor.GetOriginalInstructions(Data.MirrorMethod))
-                {
-                    L($"{i} : {instr.GetInfo()}");
-                    i++;
-                }
-
-                L($"Dynamic Method: {Data.Method.GetInfo()}");
-                L("|------Instructions-----|");
-                i = 0;
-                foreach (var instr in Data.Instructions)
-                {
-                    L($"{i} : {instr.GetInfo()}");
-                    i++;
-                }
-
-                L("return type: " + Data.Method.ReturnType.GetInfo());
-                LogService.LogInfo("|--------Mirror Debug Data Dump--------|");
+                Log(Data, false);
             }
         }
 

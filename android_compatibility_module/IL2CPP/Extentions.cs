@@ -116,6 +116,10 @@ public static class Extentions
     }
     public static string GetInfo(this CodeInstruction info)
     {
+        if (info == null)
+        {
+            return "Null Instruction";
+        }
         string msg = "";
         if (info.operand is MemberInfo member)
         {
@@ -126,20 +130,32 @@ public static class Extentions
     }
     public static string GetInfo(this ParameterInfo info)
     {
+        if (info == null)
+        {
+            return "Null Parameter";
+        }
         return $"parameter {info.Name} of {info.ParameterType.GetInfo()}";
     }
     public static string GetInfo(this MemberInfo info)
     {
+        if (info == null)
+        {
+            return "Null member";
+        }
         return $"member {info.Name} of {info.DeclaringType.GetInfo()}";
     }
     public static string GetInfo(this MethodBase info)
     {
+        if(info == null)
+        {
+            return "Null Method";
+        }
         string msg = "";
         foreach (var param in info.GetParameters())
         {
             msg += param.GetInfo();
         }
-        return $"member {info.Name} of {info.DeclaringType.GetInfo()} with params {msg}";
+        return $"method {info.Name} of {info.DeclaringType.GetInfo()} with params {msg}";
     }
     public static WrappedBehaviour AddComponent(this GameObject gameObject, Type type)
     {

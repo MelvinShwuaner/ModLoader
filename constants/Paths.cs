@@ -44,7 +44,7 @@ public static class Paths
     public static readonly string NativeModsPath = Combine(StreamingAssetsPath, Others.IsAndroid ? "mods" : "Mods");
 
     /// <summary>
-    /// Path to game native Managed folder,if on android these are STUB DLLS! DO NOT USE THEM!
+    /// Path to game native Managed folder, on android these are STUB DLLS! DO NOT USE THEM!
     /// </summary>
     public static readonly string ManagedPath = !Others.IsAndroid
         ? Others.is_editor
