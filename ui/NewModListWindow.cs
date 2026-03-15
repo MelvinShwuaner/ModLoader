@@ -29,10 +29,6 @@ internal class NewModListWindow : AbstractWideWindow<NewModListWindow>
 
     protected override void Init()
     {
-        if (Config.isAndroid)
-        {
-            return;
-        }
         var type_select_part = CreateGameObject("TypeSelectPart", typeof(Image), typeof(VerticalLayoutGroup));
         type_select_part.transform.SetParent(BackgroundTransform);
         type_select_part.transform.localPosition = new Vector3(-260, 0);

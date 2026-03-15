@@ -29,11 +29,11 @@ public static class MelonHelper
         APKAssetManager.Initialize();
         if (!APKAssetManager.DoesAssetExist(assetPath))
         {
-            MelonLogger.Warning($"DLL not found in APK assets: {assetPath}");
+            MelonLogger.Warning($"File not found in APK assets: {assetPath}");
             return null;
         }
-        var dllBytes = APKAssetManager.GetAssetBytes(assetPath);
-        return dllBytes is { Length: > 0 } ? dllBytes : null;
+        var assetBytes = APKAssetManager.GetAssetBytes(assetPath);
+        return assetBytes is { Length: > 0 } ? assetBytes : null;
     }
 
     public static void Log(string msg)

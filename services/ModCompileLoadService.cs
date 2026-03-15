@@ -234,7 +234,10 @@ public static class ModCompileLoadService
         "System.Linq.Expressions.dll",
         "mscorlib.dll",
         "System.Private.Uri.dll",
-        "System.IO.Compression.ZipFile.dll"
+        "System.IO.Compression.ZipFile.dll",
+        "System.Reflection.Primitives.dll",
+        "System.Reflection.Emit.ILGeneration.dll",
+        "System.Collections.Concurrent.dll"
         // add any additional DLLs 
     };
     

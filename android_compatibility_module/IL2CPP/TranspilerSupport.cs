@@ -484,6 +484,10 @@ public class MirroredAssemblies : AssemblyLoadContext
             }
         }
 
+        public static void getilcode(MethodInfo info)
+        {
+            info.GetMethodBody().GetILAsByteArray();
+        }
         /// <summary>
         /// class containing all default stages for generating mirror methods
         /// </summary>
