@@ -1,6 +1,7 @@
 using HarmonyLib;
 using HarmonyLib.Public.Patching;
 using HarmonyLib.Tools;
+using Il2CppInterop.Runtime.InteropTypes.Arrays;
 using Il2CppSystem.Runtime.Remoting.Messaging;
 using MelonLoader;
 using MonoMod.Cil;
@@ -105,9 +106,9 @@ public static class TranspilerSupport
 
     static void ManagedField(ref Type type)
     {
-        if (MirroredAssemblies.TryGetNative(type.Assembly, out Assembly native))
+        if (MirroredAssemblies.TryGetManaged(type.Assembly, out Assembly managed))
         {
-            type = MirroredAssemblies.RemapType(type, native);
+            type = MirroredAssemblies.RemapType(type, managed);
         }
     }
 
@@ -268,10 +269,23 @@ public class MirroredAssemblies : AssemblyLoadContext
     /// the IL2CPP Assembly
     /// </summary>
     public static Assembly NativeAssembly { get; internal set; }
-    static Dictionary<Assembly, Assembly> StubToNativeMap = [];
+    static Dictionary<Assembly, Assembly> ManagedToNative = [];
     public static bool TryGetNative(Assembly Managed, out Assembly Native)
     {
-        return StubToNativeMap.TryGetValue(Managed, out Native);
+        return ManagedToNative.TryGetValue(Managed, out Native);
+    }
+    public static bool TryGetManaged(Assembly Native, out Assembly Managed)
+    {
+       foreach(KeyValuePair<Assembly, Assembly> pair in ManagedToNative)
+        {
+            if (pair.Value == Native)
+            {
+                Managed = pair.Key;
+                return true;
+            }
+        }
+        Managed = null;
+        return false;
     }
     private MirroredAssemblies() : base("ManagedAssemblies", isCollectible: false)
     {
@@ -281,12 +295,14 @@ public class MirroredAssemblies : AssemblyLoadContext
     private static MirroredAssemblies Instance;
     public static bool IsManaged(Assembly Assembly)
     {
-        return Assembly != null && ( Assembly == ManagedAssembly || StubToNativeMap.ContainsKey(Assembly));
+        return Assembly != null && ( Assembly == ManagedAssembly || ManagedToNative.ContainsKey(Assembly));
     }
     internal static void Init(AppDomain appDomain)
     {
         Instance = new MirroredAssemblies();
         ManagedAssembly = LoadMirrorAssembly(Paths.PublicizedAssemblyPath);
+        NativeAssembly = typeof(Actor).Assembly;
+        ManagedToNative.Add(ManagedAssembly, NativeAssembly);
         foreach (var path in Directory.GetFiles(Paths.ManagedPath, "*.dll"))
         {
             Assembly stub = LoadMirrorAssembly(path);
@@ -294,14 +310,13 @@ public class MirroredAssemblies : AssemblyLoadContext
             Assembly native = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => (a.GetName().Name == name || a.GetName().Name == "Il2Cpp"+name) && a != stub);
             if (native != null)
             {
-                StubToNativeMap.Add(stub, native);
+                ManagedToNative.Add(stub, native);
             }
             else
             {
                 LogService.LogWarning($"Failed to find native assembly for {name}");
             }
         }
-        NativeAssembly = typeof(Actor).Assembly;
         Generator.Init();
     }
 
@@ -309,6 +324,14 @@ public class MirroredAssemblies : AssemblyLoadContext
     {
         return Instance.LoadFromAssemblyPath(Path.GetFullPath(path));
     }
+    /// <summary>
+    /// Remaps a type from native assemblies and managed assemblies
+    /// </summary>
+    /// <param name="type">the type</param>
+    /// <param name="targetAssembly">the target assembly. this can be overwritten automatically</param>
+    /// <param name="nativeDeclaringType">if this is a generic argument, the declaringtype is the class that has this generic argument</param>
+    /// <param name="NewName">its new Full name</param>
+    /// <returns></returns>
     public static Type RemapType(Type type, Assembly targetAssembly, Type nativeDeclaringType = null, string NewName = null)
     {
         if (type == null)
@@ -316,7 +339,7 @@ public class MirroredAssemblies : AssemblyLoadContext
 
         if (type.Assembly == targetAssembly)
             return type;
-        if (StubToNativeMap.TryGetValue(type.Assembly, out Assembly native) && native != targetAssembly){
+        if (ManagedToNative.TryGetValue(type.Assembly, out Assembly native) && native != targetAssembly){
             Log($"remapped type {type.FullName} to new namespace target " + native.FullName);
             return RemapType(type, native, nativeDeclaringType);
         }
@@ -330,7 +353,21 @@ public class MirroredAssemblies : AssemblyLoadContext
         if (type.IsArray)
         {
             var element = RemapType(type.GetElementType(), targetAssembly, nativeDeclaringType, NewName);
-            return type.GetArrayRank() == 1 ? element.MakeArrayType() : element.MakeArrayType(type.GetArrayRank());
+            
+            if (targetAssembly != ManagedAssembly)
+            {
+                if(element == typeof(string))
+                {
+                    return typeof(Il2CppStringArray);
+                }
+                var wrapper = element.IsValueType
+                    ? typeof(Il2CppStructArray<>)
+                    : typeof(Il2CppReferenceArray<>);
+
+                return wrapper.MakeGenericType(element);
+            }
+
+            return element.MakeArrayType();
         }
 
         if (type.IsGenericParameter)
@@ -357,7 +394,7 @@ public class MirroredAssemblies : AssemblyLoadContext
 
             return remappedDef.MakeGenericType(args);
         }
-        if (!type.IsValueType && type != typeof(string))
+        if (!IsCoreValueType(type))
         {
             if (type.FullName.StartsWith("System.") && targetAssembly == NativeAssembly)
             {
@@ -370,8 +407,23 @@ public class MirroredAssemblies : AssemblyLoadContext
                 return RemapType(type, null, nativeDeclaringType, type.FullName[6..]);
             }
         }
+        else
+        {
+            return type;
+        }
         var remapped = targetAssembly?.GetType(NewName ?? type.FullName);
         return remapped ?? GetType(NewName ?? type.FullName);
+    }
+    static bool IsCoreValueType(Type t)
+    {
+        if (t.IsPrimitive)
+            return true;
+
+        return t == typeof(decimal)
+            || t == typeof(DateTime)
+            || t == typeof(Guid)
+            || t == typeof(string)
+            || t == typeof(void);
     }
     public static Type GetType(string FullName)
     {
@@ -513,7 +565,7 @@ public class MirroredAssemblies : AssemblyLoadContext
             catch (Exception ex)
             {
                 LogService.LogError($"Failed to Generate Mirror Delegate! the IL Code is Invalid! {ex}");
-                throw new InvalidDataException($"Mirror is Invalid! {ex}");
+                throw new InvalidDataException($"Mirror is Invalid!");
             }
         }
         public static void Log(GeneratorData Data, bool Error)
@@ -705,7 +757,7 @@ public class MirroredAssemblies : AssemblyLoadContext
                                 if (t1.GetGenericTypeDefinition() != t2.GetGenericTypeDefinition())
                                     return false;
                             }
-                            else if (t1 != t2)
+                            else if (!t2.IsAssignableFrom(t1))
                                 return false;
                         }
 
