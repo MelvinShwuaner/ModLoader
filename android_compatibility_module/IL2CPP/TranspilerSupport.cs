@@ -339,21 +339,23 @@ public class MirroredAssemblies : AssemblyLoadContext
 
         if (type.Assembly == targetAssembly)
             return type;
-        
         if (TryGetNative(type.Assembly, out Assembly native) && native != targetAssembly){
             Log($"remapped type {type.FullName} to new namespace target " + native.FullName);
-            return RemapType(type, native, DeclaringType);
+            return RemapType(type, native, DeclaringType, NewName);
         }
         if (TryGetManaged(type.Assembly, out Assembly managed) && managed != targetAssembly){
             Log($"remapped type {type.FullName} to new namespace target " + managed.FullName);
-            return RemapType(type, managed, DeclaringType);
+            return RemapType(type, managed, DeclaringType, NewName);
         }
-        
-        if (type.IsNested)
+        if (type.IsGenericType && !type.IsGenericTypeDefinition)
         {
-            var declaring = RemapType(type.DeclaringType, targetAssembly, DeclaringType, NewName);
-            Log($"remapped nested type {type.FullName} to new owner {declaring.FullName}");
-            return declaring.GetNestedType(type.Name, BindingFlags.Public | BindingFlags.NonPublic);
+            var genericDef = type.GetGenericTypeDefinition();
+            var remappedDef = RemapType(genericDef, targetAssembly, DeclaringType, NewName);
+            var args = type.GetGenericArguments()
+                .Select(t => RemapType(t, targetAssembly, DeclaringType, NewName))
+                .ToArray();
+
+            return remappedDef.MakeGenericType(args);
         }
         if (type.IsByRef)
             return RemapType(type.GetElementType(), targetAssembly, DeclaringType, NewName).MakeByRefType();
@@ -395,7 +397,12 @@ public class MirroredAssemblies : AssemblyLoadContext
 
             return result;
         }
-        
+        if (type.IsNested)
+        {
+            var declaring = RemapType(type.DeclaringType, targetAssembly, DeclaringType, NewName);
+            Log($"remapped nested type {type.FullName} to new owner {declaring.FullName}");
+            return declaring.GetNestedType(type.Name, BindingFlags.Public | BindingFlags.NonPublic);
+        }
         if (!IsCoreValueType(type))
         {
             if (NewName == null)
@@ -792,11 +799,11 @@ public class MirroredAssemblies : AssemblyLoadContext
         {
             switch (operand)
             {
-                case MethodInfo m when IsManaged(m.DeclaringType?.Assembly):
+                case MethodInfo m:
                 {
                     return RemapMethod(m);
                 }
-                case ConstructorInfo c when IsManaged(c.DeclaringType?.Assembly):
+                case ConstructorInfo c:
                 {
                     Type nativeDeclType;
                     Type RemapOperandType(Type t) => RemapType(t, NativeAssembly, nativeDeclType);
@@ -807,7 +814,7 @@ public class MirroredAssemblies : AssemblyLoadContext
 
                     return AccessTools.Constructor(nativeDeclType, paramTypes);
                 }
-                case Type t when IsManaged(t.Assembly):
+                case Type t:
                     return RemapType(t, NativeAssembly);
                 default:
                     return operand;
