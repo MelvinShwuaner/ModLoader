@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Reflection;
+using System.Reflection.Emit;
 using HarmonyLib;
 using Il2CppInterop.Runtime;
 using Il2CppInterop.Runtime.InteropTypes;
@@ -92,7 +93,22 @@ public static class Extentions
     public static void AddListener<T>(this UnityEvent<T> action, Delegate func){
         action.AddListener(Converter.C<UnityAction<T>>(func));
     }
+    public static bool CanAssignTo(this Type derived, Type baseType)
+    {
+        while (derived != null)
+        {
+            if (derived == baseType)
+                return true;
+            
+            if (derived.IsGenericType &&
+                baseType.IsGenericType &&
+                derived.GetGenericTypeDefinition() == baseType.GetGenericTypeDefinition())
+                return true;
 
+            derived = derived.BaseType;
+        }
+        return false;
+    }
     public static string FileName(this Assembly assembly)
     {
         return Path.GetFileName(assembly.Location);

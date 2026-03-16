@@ -87,7 +87,7 @@ public static class HarmonyUtils
         BaseInstPredictor._init();
     }
 
-    public static void Emit(this List<CodeInstruction> list, OpCode opcode, object operand = null)
+    public static void Add(this List<CodeInstruction> list, OpCode opcode, object operand = null)
     {
         list.Add(new CodeInstruction(opcode, operand));
     }
@@ -233,6 +233,47 @@ public static class HarmonyUtils
         var priority = Method.GetCustomAttribute<HarmonyPriority>() ?? Method.DeclaringType?.GetCustomAttribute<HarmonyPriority>();
         return priority == null ? Priority.Normal : priority.info.priority;
     }
+    public static int GetSize(this CodeInstruction instr)
+    {
+        int size = instr.opcode.Size; // opcode itself
+        switch (instr.opcode.OperandType)
+        {
+            case OperandType.InlineNone:
+                break;
 
-    
+            case OperandType.ShortInlineBrTarget:
+            case OperandType.ShortInlineI:
+            case OperandType.ShortInlineVar:
+                size += 1;
+                break;
+
+            case OperandType.InlineVar:
+                size += 2;
+                break;
+
+            case OperandType.InlineI:
+            case OperandType.InlineBrTarget:
+            case OperandType.InlineField:
+            case OperandType.InlineMethod:
+            case OperandType.InlineSig:
+            case OperandType.InlineString:
+            case OperandType.InlineTok:
+            case OperandType.InlineType:
+            case OperandType.ShortInlineR:
+                size += 4;
+                break;
+
+            case OperandType.InlineI8:
+            case OperandType.InlineR:
+                size += 8;
+                break;
+
+            case OperandType.InlineSwitch:
+                var labels = (Label[])instr.operand;
+                size += 4 + (labels.Length * 4);
+                break;
+        }
+
+        return size;
+    }
 }
