@@ -295,7 +295,7 @@ public class MirroredAssemblies : AssemblyLoadContext
     private static MirroredAssemblies Instance;
     public static bool IsManaged(Assembly Assembly)
     {
-        return Assembly != null && ( Assembly == ManagedAssembly || ManagedToNative.ContainsKey(Assembly));
+        return ManagedToNative.ContainsKey(Assembly);
     }
     internal static void Init()
     {
@@ -339,11 +339,22 @@ public class MirroredAssemblies : AssemblyLoadContext
 
         if (type.Assembly == targetAssembly)
             return type;
-        if (ManagedToNative.TryGetValue(type.Assembly, out Assembly native) && native != targetAssembly){
+        
+        if (TryGetNative(type.Assembly, out Assembly native) && native != targetAssembly){
             Log($"remapped type {type.FullName} to new namespace target " + native.FullName);
             return RemapType(type, native, DeclaringType);
         }
-      
+        if (TryGetManaged(type.Assembly, out Assembly managed) && managed != targetAssembly){
+            Log($"remapped type {type.FullName} to new namespace target " + managed.FullName);
+            return RemapType(type, managed, DeclaringType);
+        }
+        
+        if (type.IsNested)
+        {
+            var declaring = RemapType(type.DeclaringType, targetAssembly, DeclaringType, NewName);
+            Log($"remapped nested type {type.FullName} to new owner {declaring.FullName}");
+            return declaring.GetNestedType(type.Name, BindingFlags.Public | BindingFlags.NonPublic);
+        }
         if (type.IsByRef)
             return RemapType(type.GetElementType(), targetAssembly, DeclaringType, NewName).MakeByRefType();
 
@@ -354,7 +365,7 @@ public class MirroredAssemblies : AssemblyLoadContext
         {
             var element = RemapType(type.GetElementType(), targetAssembly, DeclaringType, NewName);
             
-            if (targetAssembly != ManagedAssembly)
+            if (!IsManaged(targetAssembly))
             {
                 if(element == typeof(string))
                 {
@@ -384,36 +395,30 @@ public class MirroredAssemblies : AssemblyLoadContext
 
             return result;
         }
-
-        if (type.IsGenericType && !type.IsGenericTypeDefinition)
-        {
-            var genericDef = type.GetGenericTypeDefinition();
-            var remappedDef = RemapType(genericDef, targetAssembly, DeclaringType, NewName);
-            var args = type.GetGenericArguments()
-                .Select(t => RemapType(t, targetAssembly, DeclaringType, NewName))
-                .ToArray();
-
-            return remappedDef.MakeGenericType(args);
-        }
+        
         if (!IsCoreValueType(type))
         {
-            if (type.FullName.StartsWith("System.") && targetAssembly == NativeAssembly)
+            if (NewName == null)
             {
-                Log($"remapped type {type.FullName} to il2cpp system");
-                return RemapType(type, null, DeclaringType, "Il2Cpp" + type.FullName);
-            }
-            else if (type.FullName.StartsWith("Il2Cpp") && targetAssembly == ManagedAssembly)
-            {
-                Log($"remapped type {type.FullName} to system");
-                return RemapType(type, null, DeclaringType, type.FullName[6..]);
+                if (type.FullName.StartsWith("System."))
+                {
+                    Log($"remapped type {type.FullName} to il2cpp system");
+                    return RemapType(type, targetAssembly, DeclaringType, "Il2Cpp" + type.FullName);
+                }
+                if (type.FullName.StartsWith("Il2Cpp"))
+                {
+                    Log($"remapped type {type.FullName} to system");
+                    return RemapType(type, targetAssembly, DeclaringType, type.FullName[..6]);
+                }
             }
         }
         else
         {
             return type;
         }
-        var remapped = targetAssembly?.GetType(NewName ?? type.FullName);
-        return remapped ?? GetType(NewName ?? type.FullName);
+        string name = NewName ?? type.FullName;
+        var remapped = targetAssembly?.GetType(name);
+        return remapped ?? GetType(name);
     }
     static bool IsCoreValueType(Type t)
     {
@@ -490,7 +495,7 @@ public class MirroredAssemblies : AssemblyLoadContext
             {
                 throw new MissingMethodException("The Managed type does not exist!");
             }
-
+            
             var paramList = original.GetParameters()
                 .Select(p => p.ParameterType)
                 .ToList();
@@ -498,7 +503,7 @@ public class MirroredAssemblies : AssemblyLoadContext
             if (!original.IsStatic)
                 paramList.Insert(0, original.DeclaringType);
             var paramms = paramList.ToArray();
-
+            
             MethodInfo mirrorMethod = mirrorType.GetMethod(
                 original.Name,
                 BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static,
@@ -590,7 +595,7 @@ public class MirroredAssemblies : AssemblyLoadContext
             int l = 0;
             foreach (var instr in PatchProcessor.GetOriginalInstructions(Data.MirrorMethod))
             {
-                L($"IL_{{l:X4}}: {i} : {instr.GetInfo()}");
+                L($"IL_{i:X}: {l} : {instr.GetInfo()}");
                 i += instr.GetSize();
                 l++;
             }
@@ -601,7 +606,7 @@ public class MirroredAssemblies : AssemblyLoadContext
             l = 0;
             foreach (var instr in Data.Instructions)
             {
-                L($"IL_{{l:X4}}: {i} : {instr.GetInfo()}");
+                L($"IL_{i:X}: {l} : {instr.GetInfo()}");
                 i += instr.GetSize();
                 l++;
             }
