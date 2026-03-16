@@ -3,7 +3,6 @@ using HarmonyLib;
 using NeoModLoader.api;
 using NeoModLoader.constants;
 using NeoModLoader.General;
-using NeoModLoader.General.Event;
 using NeoModLoader.General.UI.Tab;
 using NeoModLoader.ncms_compatible_layer;
 using NeoModLoader.services;
@@ -114,7 +113,6 @@ public class WorldBoxMod : MonoBehaviour
             LM.ApplyLocale();
             TabManager._init();
             WindowCreator.init();
-            ListenerManager._init();
             WrappedPowersTab._init();
             NCMSCompatibleLayer.PreInit();
             ModInfoUtils.InitializeModCompileCache();
