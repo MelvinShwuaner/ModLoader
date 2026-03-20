@@ -23,10 +23,18 @@ public static class Converter
 
     public static System.ValueTuple<X, Y, Z> C<X, Y, Z>(ValueTuple<X, Y, Z> tuple)
     {
+        if (!typeof(X).IsIL2CPPCompatible() || !typeof(Y).IsIL2CPPCompatible() || !typeof(Z).IsIL2CPPCompatible())
+        {
+            throw new ArgumentException("value tuple types are not compatible with IL2CPP");
+        }
         return new System.ValueTuple<X, Y, Z>(tuple.Item1, tuple.Item2, tuple.Item3);
     }
     public static System.ValueTuple<X, Y> C<X, Y>(ValueTuple<X, Y> tuple)
     {
+        if (!typeof(X).IsIL2CPPCompatible() || !typeof(Y).IsIL2CPPCompatible())
+        {
+            throw new ArgumentException("value tuple types are not compatible with IL2CPP");
+        }
         return new System.ValueTuple<X, Y>(tuple.Item1, tuple.Item2);
     }
     public static System.Type C (this Type type)
@@ -43,17 +51,6 @@ public static class Converter
     public static A[] C<A>(this Il2CppArrayBase<A> arr)
     {
         return arr;
-    }
-    //List.Of crashes game for some reason
-    public static System.Collections.Generic.List<T> CreateList<T>(params T[] arr)
-    {
-        System.Collections.Generic.List<T> list = new System.Collections.Generic.List<T>();
-        foreach (var t in arr)
-        {
-            list.Add(t);
-        }
-
-        return list;
     }
     public static System.Nullable<A> Nullify<A>(this A a) where A : new()
     {
@@ -84,9 +81,12 @@ public static class Converter
     {
         return new System.Exception(e.Message);
     }
-    
     public static System.Collections.Generic.HashSet<E> C<E>(this HashSet<E> set)
     {
+        if (!typeof(E).IsIL2CPPCompatible())
+        {
+            throw new ArgumentException(typeof(E) + " is not compatible with IL2CPP");
+        }
         System.Collections.Generic.HashSet<E> hash = new();
         foreach (var VARIABLE in set)
         {
@@ -105,6 +105,10 @@ public static class Converter
     }
     public static System.Collections.Generic.List<E> C<E>(this List<E> e)
     {
+        if (!typeof(E).IsIL2CPPCompatible())
+        {
+            throw new ArgumentException(typeof(E) + " is not compatible with IL2CPP");
+        }
         System.Collections.Generic.List<E> list = new System.Collections.Generic.List<E>();
         foreach (var item in e)
         {
@@ -121,8 +125,12 @@ public static class Converter
         }
         return list;
     }
-    public static Dictionary<key, value> C<key, value>(this System.Collections.Generic.Dictionary<key, value> e) 
+    public static Dictionary<key, value> C<key, value>(this System.Collections.Generic.Dictionary<key, value> e)
     {
+        if (!typeof(key).IsIL2CPPCompatible() || !typeof(value).IsIL2CPPCompatible())
+        {
+            throw new ArgumentException("the dictionary types are not compatible with IL2CPP");
+        }
         Dictionary<key, value> dictionary = new Dictionary<key, value>();
         foreach (var item in e)
         {
@@ -130,7 +138,7 @@ public static class Converter
         }
         return dictionary;
     }
-    public static System.Collections.Generic.Dictionary<key, value> C<key, value>(this Dictionary<key, value> e) 
+    public static System.Collections.Generic.Dictionary<key, value> C<key, value>(this Dictionary<key, value> e)
     {
         System.Collections.Generic.Dictionary<key, value> dictionary = new System.Collections.Generic.Dictionary<key, value>();
         foreach (var item in e)

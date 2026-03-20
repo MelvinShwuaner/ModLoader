@@ -15,7 +15,7 @@ using System.Runtime.Loader;
 using static NeoModLoader.AndroidCompatibilityModule.TranspilerSupport.TranspilerSupport;
 
 namespace NeoModLoader.AndroidCompatibilityModule.TranspilerSupport;
-
+//TODO: preprocess the publicized assembly to have IL code that references il2cpp assemblies, instead of doing that on the fly and producing bad results.
 /// <summary>
 /// tells NML to not replace the IL2CPP function you are transpiling with a managed one
 /// </summary>
@@ -303,6 +303,7 @@ public class MirroredAssemblies : AssemblyLoadContext
         ManagedAssembly = LoadMirrorAssembly(Paths.PublicizedAssemblyPath);
         NativeAssembly = typeof(Actor).Assembly;
         ManagedToNative.Add(ManagedAssembly, NativeAssembly);
+        /*
         foreach (var path in Directory.GetFiles(Paths.ManagedPath, "*.dll"))
         {
             Assembly stub = LoadMirrorAssembly(path);
@@ -316,7 +317,8 @@ public class MirroredAssemblies : AssemblyLoadContext
             {
                 LogService.LogWarning($"Failed to find native assembly for {name}");
             }
-        }
+        }*/
+        //TODO: get rid of this shit code
         Generator.Init();
     }
 

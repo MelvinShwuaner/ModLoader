@@ -14,7 +14,7 @@ public static class MelonHelper
         return MelonEnvironment.GameRootDirectory;
     }
 
-    public static void Init()
+    internal static void Init()
     {
         Log("Initializing android support module");
         TranspilerSupport.TranspilerSupport.Initialize(new Harmony(Others.harmony_id));

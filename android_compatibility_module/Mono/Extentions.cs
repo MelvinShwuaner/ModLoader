@@ -14,7 +14,10 @@ public static class Extentions
         {
             return obj;
         }
-
+    public static IEnumerable<T> OfIL2CppType<T>(this IEnumerable<object> list)
+    {
+        return list.OfType<T>();
+    }
     public static List<Transform> GetChildren(this Transform transform)
     {
         List<Transform> list = new List<Transform>();
