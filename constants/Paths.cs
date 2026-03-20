@@ -142,6 +142,14 @@ public static class Paths
     {
         "bin", "obj", "Properties", "packages", "packages.config", "packages-lock.json", "packages-lock.xml",
     };
+    /// <summary>
+    /// All folders/files that will be ignored when searching for mods' content to compile
+    /// </summary>
+    public static readonly HashSet<string> CompileIgnoreSearchDirectories = new HashSet<string>()
+    {
+        "bin", "obj", "Properties", "packages", "packages.config", "packages-lock.json", "packages-lock.xml",
+        "GameResources", "GameResourcesReplace", "AssetBundles"
+    };
 
     internal static readonly string LinuxSteamLocalConfigPath =
         "~/.local/share/Steam/userdata/{0}/config/localconfig.vdf";

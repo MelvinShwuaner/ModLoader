@@ -750,7 +750,7 @@ internal static class ModInfoUtils
         if (mod_last_update_timestamps.ContainsKey(dir.FullName)) return mod_last_update_timestamps[dir.FullName];
         var files = SystemUtils.SearchFileRecursive(dir.FullName, (filename) => !filename.StartsWith("."),
             dirname => !dirname.StartsWith(".") &&
-                       !Paths.IgnoreSearchDirectories.Contains(dirname));
+                       !Paths.CompileIgnoreSearchDirectories.Contains(dirname));
         var result = files.Select(filepath => new FileInfo(filepath))
             .Select(file_info =>
                 Math.Max(file_info.CreationTimeUtc.Ticks, file_info.LastWriteTimeUtc.Ticks))

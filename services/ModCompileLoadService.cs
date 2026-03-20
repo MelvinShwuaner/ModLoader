@@ -78,7 +78,7 @@ public static class ModCompileLoadService
             file_name =>
                 file_name.EndsWith(".cs") && !file_name.StartsWith("."),
             dir_name => !dir_name.StartsWith(".") &&
-                        !Paths.IgnoreSearchDirectories.Contains(dir_name));
+                        !Paths.CompileIgnoreSearchDirectories.Contains(dir_name));
         var embeded_resources = new List<ResourceDescription>();
 
         bool is_ncms_mod = false;
