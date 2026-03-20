@@ -488,10 +488,11 @@ public static class ModCompileLoadService
             default:
                 throw new ArgumentException("Cannot load mod of type " + pMod.ModType + " with NML!");
         }
-
+        bool all_success = true;
         foreach (var mod_assembly in mod_assemblies)
         {
             GameObject mod_instance;
+            bool any_loaded = false;
             foreach (var type in mod_assembly.GetTypes())
             {
                 var mod_entry = Attribute.GetCustomAttribute(type, typeof(ModEntry));
@@ -535,6 +536,9 @@ public static class ModCompileLoadService
 
                     mod_interface.OnLoad(pMod, mod_instance);
                     mod_instance.SetActive(true);
+                    WorldBoxMod.LoadedMods.Add(mod_instance.GetComponent<IMod>());
+                    any_loaded = true;
+                    break;
                 }
                 catch (Exception e)
                 {
@@ -547,19 +551,23 @@ public static class ModCompileLoadService
 
                     continue;
                 }
-
-
-                WorldBoxMod.LoadedMods.Add(mod_instance.GetComponent<IMod>());
+            }
+            if (!any_loaded)
+            {
+                all_success = false;
+                LogService.LogError(
+                    $"No valid mod component found in assembly {mod_assembly.FullName} for mod {pMod.UID}");
+            }
+        }
+        if (all_success)
+        {
                 WorldBoxMod.AllRecognizedMods[pMod] = ModState.LOADED;
                 ModDepenSolveService.MarkModLoaded(pMod);
-                break;
             }
-
-            if (WorldBoxMod.AllRecognizedMods[pMod] != ModState.LOADED)
+        else
             {
-                pMod.FailReason.AppendLine("No Valid Mod Component Found");
+            pMod.FailReason.AppendLine("All mod assemblies failed to load.");
                 ModInfoUtils.clearModCompileTimestamp(pMod.UID);
-            }
         }
     }
 
