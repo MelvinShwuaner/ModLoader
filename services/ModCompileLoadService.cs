@@ -214,8 +214,6 @@ public static class ModCompileLoadService
         ModInfoUtils.RecordMod(pModDecl, available_depens, available_optional_depens, false, false);
         return true;
     }
-<<<<<<< HEAD
-=======
 
     private static string CollectCompileErrors(IEnumerable<Diagnostic> pDiagnostics)
     {
@@ -293,8 +291,6 @@ public static class ModCompileLoadService
 
         LM.ApplyLocale(pUpdateTexts);
     }
-
->>>>>>> upstream/master
     /// <summary>
     /// Prepare references for mod nodes
     /// </summary>
@@ -558,12 +554,8 @@ public static class ModCompileLoadService
                         mod_interface = (IMod)mod_instance.AddComponent(type);
                         main_component = (MonoBehaviour)mod_interface;
                     }
-<<<<<<< HEAD
                     #endif
-                    auto_localize(main_component);
-=======
                     LoadLocales(main_component, pMod, false);
->>>>>>> upstream/master
 
                     mod_interface.OnLoad(pMod, mod_instance);
                     mod_instance.SetActive(true);
@@ -582,14 +574,6 @@ public static class ModCompileLoadService
 
                     continue;
                 }
-<<<<<<< HEAD
-
-
-                WorldBoxMod.LoadedMods.Add(mod_interface);
-                WorldBoxMod.AllRecognizedMods[pMod] = ModState.LOADED;
-                break;
-=======
->>>>>>> upstream/master
             }
             if (!any_loaded)
             {
@@ -602,11 +586,11 @@ public static class ModCompileLoadService
         {
                 WorldBoxMod.AllRecognizedMods[pMod] = ModState.LOADED;
                 ModDepenSolveService.MarkModLoaded(pMod);
-            }
+        }
         else
-            {
+        {
             pMod.FailReason.AppendLine("All mod assemblies failed to load.");
-                ModInfoUtils.clearModCompileTimestamp(pMod.UID);
+            ModInfoUtils.clearModCompileTimestamp(pMod.UID);
         }
     }
 
@@ -711,17 +695,15 @@ public static class ModCompileLoadService
 
     private static bool TryLoadCompiledModAtRuntime(ModDeclare pModDeclare)
     {
-        MasterBuilder builder = new MasterBuilder();
+        AssetLinker linker = new AssetLinker();
         ResourcesPatch.LoadResourceFromFolder(Path.Combine(pModDeclare.FolderPath, Paths.ModResourceFolderName),
-            out List<Builder> builders);
+            linker);
         ResourcesPatch.LoadResourceFromFolder(Path.Combine(pModDeclare.FolderPath,
-            Paths.NCMSAdditionModResourceFolderName), out List<Builder> builders2);
+            Paths.NCMSAdditionModResourceFolderName), linker);
         ResourcesPatch.LoadAssetBundlesFromFolder(Path.Combine(pModDeclare.FolderPath, Paths.ModAssetBundleFolderName));
 
         LoadMod(pModDeclare);
-        builder.AddBuilders(builders);
-        builder.AddBuilders(builders2);
-        builder.BuildAll();
+        linker.AddAssets();
 
         if (IsModLoaded(pModDeclare.UID))
         {
@@ -779,17 +761,7 @@ public static class ModCompileLoadService
             ModInfoUtils.DealWithBepInExModLinkRequests();
             return false;
         }
-
-<<<<<<< HEAD
-        if (!compile_success) return false;
-        AssetLinker Linker = new AssetLinker();
-        ResourcesPatch.LoadResourceFromFolder(Path.Combine(mod_declare.FolderPath, Paths.ModResourceFolderName), Linker);
-        ResourcesPatch.LoadResourceFromFolder(Path.Combine(mod_declare.FolderPath,
-            Paths.NCMSAdditionModResourceFolderName), Linker);
-
-        LoadMod(mod_declare);
-        Linker.AddAssets();
-=======
+        
         ModEnablePlan plan = ModDepenSolveService.BuildRuntimeEnablePlan(mod_declare);
         if (plan.HasFailure)
         {
@@ -845,7 +817,6 @@ public static class ModCompileLoadService
 
         ModDepenSolveService.CommitEnablePlan(plan);
         ModInfoUtils.SaveModRecords();
->>>>>>> upstream/master
         return true;
     }
 

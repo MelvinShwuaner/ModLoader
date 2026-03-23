@@ -61,18 +61,10 @@ public static class ModReloadService
         AssetLinker Linker = new();
         ResourcesPatch.LoadResourceFromFolder(Path.Combine(pMod.GetDeclaration().FolderPath,
             Paths.ModResourceFolderName), Linker);
-        ResourcesPatch.LoadResourceFromFolder(Path.Combine(pMod.GetDeclaration().FolderPath,
-<<<<<<< HEAD
+        ResourcesPatch.LoadResourceFromFolder(Path.Combine(pMod.GetDeclaration().FolderPath, 
             Paths.NCMSAdditionModResourceFolderName), Linker);
         Linker.AddAssets();
-        return false;
-=======
-            Paths.NCMSAdditionModResourceFolderName), out List<Builder> builders2);
-        Builder.AddBuilders(builders);
-        Builder.AddBuilders(builders2);
-        Builder.BuildAll();
         return true;
->>>>>>> upstream/master
     }
 
     /// <summary>
