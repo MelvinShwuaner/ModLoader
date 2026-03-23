@@ -5,7 +5,6 @@ using static NeoModLoader.AndroidCompatibilityModule.Converter;
 using NeoModLoader.api;
 using NeoModLoader.constants;
 using NeoModLoader.General;
-using NeoModLoader.General.Event;
 using NeoModLoader.General.UI.Tab;
 using NeoModLoader.ncms_compatible_layer;
 using NeoModLoader.services;
