@@ -105,7 +105,6 @@ public class WorldBoxMod : MonoBehaviour
             LM.ApplyLocale();
             TabManager._init();
             WindowCreator.init();
-            ListenerManager._init();
             WrappedPowersTab._init();
             NCMSCompatibleLayer.PreInit();
             ModInfoUtils.InitializeModCompileCache();

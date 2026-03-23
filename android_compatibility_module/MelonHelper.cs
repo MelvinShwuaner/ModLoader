@@ -1,6 +1,3 @@
-using HarmonyLib;
-using NeoModLoader.constants;
-
 namespace NeoModLoader.AndroidCompatibilityModule;
 #if IL2CPP
 using MelonLoader.Utils;
@@ -35,7 +32,6 @@ public static class MelonHelper
         var assetBytes = APKAssetManager.GetAssetBytes(assetPath);
         return assetBytes is { Length: > 0 } ? assetBytes : null;
     }
-
     public static void Log(string msg)
     {
         UnityEngine.Debug.Log(msg);

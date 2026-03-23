@@ -220,44 +220,6 @@ public static class ModCompileLoadService
         ModInfoUtils.RecordMod(pModDecl, available_depens, available_optional_depens, false, false);
         return true;
     }
-    private static readonly string[] RuntimeDlls = new[]
-    {
-        "System.Private.CoreLib.dll",
-        "System.Runtime.dll",
-        "System.Console.dll",
-        "netstandard.dll",
-        "System.Linq.dll",
-        "System.Collections.dll",
-        "System.Threading.dll",
-        "System.ObjectModel.dll",
-        "System.ComponentModel.TypeConverter.dll",
-        "System.Linq.Expressions.dll",
-        "mscorlib.dll",
-        "System.Private.Uri.dll",
-        "System.IO.Compression.ZipFile.dll",
-        "System.Reflection.Primitives.dll",
-        "System.Reflection.Emit.ILGeneration.dll",
-        "System.Collections.Concurrent.dll"
-        // add any additional DLLs 
-    };
-    private static List<MetadataReference> LoadDotNetReferencesFromApk(string DotNetPathInApk)
-    {
-        List<MetadataReference> references = new List<MetadataReference>();
-        foreach (var dllName in RuntimeDlls)
-        {
-            string assetPath = DotNetPathInApk + dllName;
-            byte[] dllBytes = MelonHelper.ReadAPKAsset(assetPath);
-            if (dllBytes != null)
-            {
-                references.Add(MetadataReference.CreateFromImage(dllBytes));
-            }
-            else
-            {
-                LogService.LogError($"Failed to load DLL {assetPath}");
-            }
-        }
-        return references;
-    }
     /// <summary>
     /// Prepare references for mod nodes
     /// </summary>
@@ -277,10 +239,7 @@ public static class ModCompileLoadService
             default_ref_path_list.AddRange(Directory.GetFiles(Paths.MelonAssemblies, "*.dll"));
             default_ref_path_list.AddRange(Directory.GetFiles(Paths.Il2CppAssemblies, "*.dll"));
         }
-        else
-        {
-            default_ref_path_list.AddRange(Directory.GetFiles(Paths.ManagedPath, "*.dll"));
-        }
+        default_ref_path_list.AddRange(Directory.GetFiles(Paths.ManagedPath, "*.dll"));
         default_ref_path_list.Add(Paths.NMLModPath);
         _default_ref_path = default_ref_path_list.ToArray();
 
@@ -296,10 +255,6 @@ public static class ModCompileLoadService
             {
                 LogService.LogError($"Error when load default reference {_default_ref_path[i]}: {e.Message}");
             }
-        }
-        if (Config.isAndroid)
-        {
-            _default_ref = _default_ref.AddRangeToArray([..LoadDotNetReferencesFromApk(Paths.DotnetAPKPath)]);
         }
         _publicized_assembly_ref = MetadataReference.CreateFromFile(Paths.PublicizedAssemblyPath);
     }

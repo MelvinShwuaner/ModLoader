@@ -32,25 +32,11 @@ public static class Extentions
 
         return -1;
     }
-    /// <summary>
-    /// attempts to cast a object, if invalid, returns null;
-    /// </summary>
-    public static T CastOrNull<T>(this Il2CppObjectBase obj) where T : Il2CppObjectBase
-    {
-	    try
-	    {
-		    return obj.Cast<T>();
-	    }
-	    catch
-	    {
-		    return null;
-	    }
-    }
     public static IEnumerable<T> OfIL2CppType<T>(this IEnumerable<Il2CppObjectBase> list)where T : Il2CppObjectBase
     {
 	    foreach (Il2CppObjectBase obj in list)
 	    {
-		    var cast = obj.CastOrNull<T>();
+		    var cast = obj.TryCast<T>();
 		    if (cast != null)
 		    {
 			    yield return cast;
@@ -70,7 +56,7 @@ public static class Extentions
     //extentions for ienumerables. since ienumerable isnt an interface in il2cpp we have to create extentions manually
     public static Il2CppSystem.Collections.Generic.List<T>  ToList<T>(this Il2CppObjectBase Object) where T : Il2CppSystem.Object
     {
-        var enumerable = Object.CastOrNull<Il2CppSystem.Collections.Generic.IEnumerable<T>>();
+        var enumerable = Object.TryCast<Il2CppSystem.Collections.Generic.IEnumerable<T>>();
         if (enumerable == null)
         {
             throw new ArgumentException($"IL2CPP Object of {Object.GetType()} cannot be enumerated!");
@@ -79,7 +65,7 @@ public static class Extentions
     }
     public static T FirstOrDefault<T>(this Il2CppObjectBase obj)
     {
-        var enumerable = obj.CastOrNull<Il2CppSystem.Collections.Generic.IEnumerable<T>>();
+        var enumerable = obj.TryCast<Il2CppSystem.Collections.Generic.IEnumerable<T>>();
         if (enumerable == null)
         {
             throw new ArgumentException($"IL2CPP Object of {obj.GetType()} cannot be enumerated!");
@@ -88,7 +74,7 @@ public static class Extentions
     }
     public static T FirstOrDefault<T>(this Il2CppObjectBase obj, Func<T, bool> predicate)
     {
-        var enumerable = obj.CastOrNull<Il2CppSystem.Collections.Generic.IEnumerable<T>>();
+        var enumerable = obj.TryCast<Il2CppSystem.Collections.Generic.IEnumerable<T>>();
         if (enumerable == null)
         {
             throw new ArgumentException($"IL2CPP Object of {obj.GetType()} cannot be enumerated!");
@@ -97,7 +83,7 @@ public static class Extentions
     }
     public static Il2CppSystem.Collections.Generic.IEnumerable<T> Where<T>(this Il2CppObjectBase obj, Func<T, bool> func)
     {
-        var enumerable = obj.CastOrNull<Il2CppSystem.Collections.Generic.IEnumerable<T>>();
+        var enumerable = obj.TryCast<Il2CppSystem.Collections.Generic.IEnumerable<T>>();
         if (enumerable == null)
         {
             throw new ArgumentException($"IL2CPP Object of {obj.GetType()} cannot be enumerated!");
@@ -106,7 +92,7 @@ public static class Extentions
     }
     public static Il2CppSystem.Collections.Generic.IEnumerable<R> Select<T, R>(this Il2CppObjectBase obj, Func<T, R> func)
     {
-        var enumerable = obj.CastOrNull<Il2CppSystem.Collections.Generic.IEnumerable<T>>();
+        var enumerable = obj.TryCast<Il2CppSystem.Collections.Generic.IEnumerable<T>>();
         if (enumerable == null)
         {
             throw new ArgumentException($"IL2CPP Object of {obj.GetType()} cannot be enumerated!");

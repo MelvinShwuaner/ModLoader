@@ -11,18 +11,9 @@ namespace NeoModLoader.constants;
 public static class Paths
 {
     /// <summary>
-    /// path to the root melon folder on android
-    /// </summary>
-    public static readonly string MelonPath = MelonHelper.GetPath();
-
-    /// <summary>
-    /// path to the dotnet dlls inside modded worldbox apk assets
-    /// </summary>
-    public static readonly string DotnetAPKPath = "dotnet/shared/Microsoft.NETCore.App/8.0.6/";
-    /// <summary>
     /// path to melon loader assemblies if on android
     /// </summary>
-    public static readonly string MelonAssemblies = Combine(MelonPath, "MelonLoader", "net8");
+    public static readonly string MelonAssemblies = Combine(GamePath, "MelonLoader", "net8");
     /// <summary>
     /// Path to the mod loader file
     /// </summary>
@@ -31,12 +22,12 @@ public static class Paths
     /// <summary>
     /// Path to persistent data
     /// </summary>
-    public static readonly string PersistentDataPath = !Config.isAndroid ? Combine(Application.persistentDataPath) : Combine(MelonPath, "UserData");
+    public static readonly string PersistentDataPath = !Config.isAndroid ? Combine(Application.persistentDataPath) : Combine(GamePath, "UserData");
 
     /// <summary>
     /// Path to folder StreamingAssets, or base melon path if on android
     /// </summary>
-    public static readonly string StreamingAssetsPath = !Others.IsAndroid ? Application.streamingAssetsPath : MelonPath;
+    public static readonly string StreamingAssetsPath = !Others.IsAndroid ? Application.streamingAssetsPath : GamePath;
 
     /// <summary>
     /// Path to game native Mods folder
@@ -44,17 +35,17 @@ public static class Paths
     public static readonly string NativeModsPath = Combine(StreamingAssetsPath, Others.IsAndroid ? "mods" : "Mods");
 
     /// <summary>
-    /// Path to game native Managed folder, on android these are STUB DLLS! DO NOT USE THEM!
+    /// Path to game native Managed folder, on android this is the .NET folder
     /// </summary>
     public static readonly string ManagedPath = !Others.IsAndroid
         ? Others.is_editor
             ? Combine(StreamingAssetsPath, "..", ".Managed")
             : Combine(StreamingAssetsPath, "..", "Managed")
-        : Combine(MelonPath, "MelonLoader", "ManagedAssemblies");
+        : "/data/data/com.mkarpenko.worldbox/dotnet/shared/Microsoft.NETCore.App/8.0.6";
     /// <summary>
     /// the Il2cpp Assemblies. on android
     /// </summary>
-    public static readonly string Il2CppAssemblies = Combine(MelonPath, "MelonLoader", "Il2CppAssemblies");
+    public static readonly string Il2CppAssemblies = Combine(GamePath, "MelonLoader", "Il2CppAssemblies");
     /// <summary>
     /// Path to folder contains NML's cache
     /// </summary>
@@ -182,7 +173,7 @@ public static class Paths
     public static string GamePath => Application.platform switch
     {
         RuntimePlatform.WindowsPlayer => Combine(StreamingAssetsPath, "..", ".."),
-        RuntimePlatform.Android => MelonPath,
+        RuntimePlatform.Android => MelonHelper.GetPath(),
         RuntimePlatform.LinuxPlayer   => Combine(StreamingAssetsPath, "..", ".."),
         RuntimePlatform.OSXPlayer     => Combine(StreamingAssetsPath, "..", "..", "..", "..", ".."),
         _                             => Combine(StreamingAssetsPath, "..", "..")
