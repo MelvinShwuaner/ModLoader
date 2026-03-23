@@ -36,6 +36,30 @@ public class WorldBoxMod : MonoBehaviour
     /// </summary>
     public static List<IMod> LoadedMods = new();
 
+    /// <summary>
+    /// Tries to get a loaded mod by declaration UID.
+    /// </summary>
+    /// <param name="pModDeclare">The target mod declaration.</param>
+    /// <param name="pLoadedMod">The loaded mod instance when found.</param>
+    /// <returns><see langword="true"/> when the mod is loaded; otherwise <see langword="false"/>.</returns>
+    public static bool TryGetLoadedMod(ModDeclare pModDeclare, out IMod pLoadedMod)
+    {
+        if (pModDeclare != null)
+        {
+            foreach (var mod in LoadedMods)
+            {
+                if (mod.GetDeclaration().UID == pModDeclare.UID)
+                {
+                    pLoadedMod = mod;
+                    return true;
+                }
+            }
+        }
+
+        pLoadedMod = null;
+        return false;
+    }
+
     internal static Dictionary<ModDeclare, ModState> AllRecognizedMods = new();
     internal static Transform Transform;
     internal static Transform InactiveTransform;
@@ -110,13 +134,19 @@ public class WorldBoxMod : MonoBehaviour
         }), "Initialize NeoModLoader");
 
         List<ModDependencyNode> mod_nodes = new();
+<<<<<<< HEAD
         SmoothLoader.add(C<MapLoaderAction>(() =>
+=======
+        ModEnablePlan startup_enable_plan = null;
+        SmoothLoader.add(() =>
+>>>>>>> upstream/master
         {
             ModCompileLoadService.loadInfoOfBepInExPlugins();
 
-            var mods = ModInfoUtils.findAndPrepareMods();
-
-            mod_nodes.AddRange(ModDepenSolveService.SolveModDependencies(mods));
+            ModInfoUtils.findAndPrepareMods();
+            ModDepenSolveService.InitializeGraph(AllRecognizedMods.Keys);
+            startup_enable_plan = ModDepenSolveService.BuildStartupEnablePlan();
+            mod_nodes.AddRange(startup_enable_plan.LoadOrder);
 
             ModCompileLoadService.prepareCompile(mod_nodes);
         }), "Load Mods Info And Prepare Mods");
@@ -157,7 +187,23 @@ public class WorldBoxMod : MonoBehaviour
             SmoothLoader.add(C<MapLoaderAction>(() =>
             {
                 ModCompileLoadService.loadMods(mods_to_load);
+<<<<<<< HEAD
                 Linker.AddAssets();
+=======
+                Builder.BuildAll();
+                if (startup_enable_plan != null)
+                {
+                    if (startup_enable_plan.RequestedRoots.All(ModCompileLoadService.IsModLoaded))
+                    {
+                        ModDepenSolveService.CommitEnablePlan(startup_enable_plan);
+                    }
+                    else
+                    {
+                        ModDepenSolveService.RollbackEnablePlan(startup_enable_plan);
+                    }
+                }
+
+>>>>>>> upstream/master
                 ModInfoUtils.SaveModRecords();
                 NCMSCompatibleLayer.Init();
                 var successfulInit = new Dictionary<IMod, bool>();
