@@ -1,3 +1,6 @@
+using HarmonyLib;
+using NeoModLoader.constants;
+
 namespace NeoModLoader.AndroidCompatibilityModule;
 #if IL2CPP
 using MelonLoader.Utils;
