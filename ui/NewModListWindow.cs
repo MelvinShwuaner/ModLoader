@@ -227,15 +227,7 @@ internal class NewModListWindow : AbstractWideWindow<NewModListWindow>
 
     private void RefreshControlPart()
     {
-        IMod selected = null;
-        foreach (var mod in WorldBoxMod.LoadedMods)
-        {
-            if (mod.GetDeclaration() == CurrentSelected)
-            {
-                selected = mod;
-                break;
-            }
-        }
+        WorldBoxMod.TryGetLoadedMod(CurrentSelected, out IMod selected);
         if (selected is IReloadable)
         {
             ReloadModButton.gameObject.SetActive(true);
@@ -291,26 +283,20 @@ internal class NewModListWindow : AbstractWideWindow<NewModListWindow>
 
     private void CommunityOfSelectedMod()
     {
-        foreach (var mod in WorldBoxMod.LoadedMods)
+        if (WorldBoxMod.TryGetLoadedMod(CurrentSelected, out var mod))
         {
-            if (mod.GetDeclaration() == CurrentSelected)
-            {
-                Application.OpenURL(mod.GetUrl());
-                return;
-            }
+            Application.OpenURL(mod.GetUrl());
+            return;
         }
         Application.OpenURL(CurrentSelected.RepoUrl);
     }
 
     private void ConfigureSelectedMod()
     {
-        foreach (var mod in WorldBoxMod.LoadedMods)
+        if (WorldBoxMod.TryGetLoadedMod(CurrentSelected, out var mod))
         {
-            if (mod.GetDeclaration() == CurrentSelected)
-            {
-                ModConfigureWindow.ShowWindow((mod as IConfigurable)?.GetConfig());
-                return;
-            }
+            ModConfigureWindow.ShowWindow((mod as IConfigurable)?.GetConfig());
+            return;
         }
     }
 
@@ -321,51 +307,24 @@ internal class NewModListWindow : AbstractWideWindow<NewModListWindow>
 
     private void ReloadSelectedMod()
     {
-        foreach (var mod in WorldBoxMod.LoadedMods)
+        if (!ModReloadService.ReloadMod(CurrentSelected))
         {
-            if (mod.GetDeclaration() == CurrentSelected && mod is IReloadable reloadable)
-            {
-                if (!ModReloadUtils.Prepare(reloadable, CurrentSelected))
-                {
-                    LogService.LogWarning($"Failed to prepare mod {CurrentSelected.Name} for reloading.");
-                    return;
-                }
-
-                if (!ModReloadUtils.CompileNew())
-                {
-                    LogService.LogWarning($"Failed to compile new mod {CurrentSelected.Name} for reloading.");
-                    return;
-                }
-
-                if (!ModReloadUtils.PatchHotfixMethodsNT())
-                {
-                    LogService.LogWarning(
-                        $"Failed to patch hotfix methods of mod {CurrentSelected.Name} for reloading.");
-                    return;
-                }
-
-                if (!ModReloadUtils.Reload())
-                {
-                    LogService.LogWarning($"Failed to reload mod {CurrentSelected.Name}.");
-                }
-                return;
-            }
+            LogService.LogWarning($"Failed to reload mod {CurrentSelected.Name}.");
         }
     }
 
     private void ToggleSelectedMod()
     {
-        var next_state = ModInfoUtils.toggleMod(CurrentSelected.UID);
-        if (next_state)
+        if (ModInfoUtils.isModDisabled(CurrentSelected.UID))
         {
-            ToggleModButton.Icon.sprite = SpriteTextureLoader.getSprite("ui/icons/iconOn");
-            ToggleModButton.TipButton.text_description_2 = "mod_next_state_enabled";
+            ModCompileLoadService.TryEnableMod(CurrentSelected);
         }
         else
         {
-            ToggleModButton.Icon.sprite = SpriteTextureLoader.getSprite("ui/icons/iconOff");
-            ToggleModButton.TipButton.text_description_2 = "mod_next_state_disabled";
+            ModCompileLoadService.DisableMod(CurrentSelected);
         }
+
+        RefreshControlPart();
     }
 
     private void FolderOfSelectedMod()
