@@ -335,7 +335,7 @@ public static class ResourcesPatch
             node.objects[Path.GetFileNameWithoutExtension(lower_path)] = obj;
         }
 
-        /// <summary>
+         /// <summary>
         /// Load resources under absPath, and patch them to the tree under the folder of path.
         /// </summary>
         /// <param name="path">Path to resource in tree</param>
@@ -390,6 +390,7 @@ public static class ResourcesPatch
             }
         }
     }
+    }
 
     class ResourceTreeNode
     {
@@ -431,4 +432,3 @@ public static class ResourcesPatch
             return result;
         }
     }
-}

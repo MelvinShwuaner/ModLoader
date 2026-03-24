@@ -80,7 +80,9 @@ namespace NeoModLoader.utils
         public void AddCustomLinker(Type Type, Linker Linker)
         {
             if(CustomLinkers.ContainsKey(Type)){
-                LogService.LogError($"Asset of Type {Type} already has linker!");
+                LogService.LogError($"Asset of Type {Type} already has linker! overwriting");
+                CustomLinkers[Type] = Linker;
+                return;
             }
             CustomLinkers.Add(Type, Linker);
         }
