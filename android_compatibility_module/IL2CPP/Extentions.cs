@@ -90,6 +90,24 @@ public static class Extentions
         }
         return enumerable.Where(Converter.C<Il2CppSystem.Func<T, bool>>(func));
     }
+    public static Il2CppSystem.Collections.Generic.IEnumerable<T> Take<T>(this Il2CppObjectBase obj, int num)
+    {
+	    var enumerable = obj.TryCast<Il2CppSystem.Collections.Generic.IEnumerable<T>>();
+	    if (enumerable == null)
+	    {
+		    throw new ArgumentException($"IL2CPP Object of {obj.GetType()} cannot be enumerated!");
+	    }
+	    return enumerable.Take(num);
+    }
+    public static Il2CppSystem.Linq.IOrderedEnumerable<T> OrderBy<T, K>(this Il2CppObjectBase obj, Func<T, K> func)
+    {
+	    var enumerable = obj.TryCast<Il2CppSystem.Collections.Generic.IEnumerable<T>>();
+	    if (enumerable == null)
+	    {
+		    throw new ArgumentException($"IL2CPP Object of {obj.GetType()} cannot be enumerated!");
+	    }
+	    return enumerable.OrderBy(Converter.C<Il2CppSystem.Func<T, K>>(func));
+    }
     public static Il2CppSystem.Collections.Generic.IEnumerable<R> Select<T, R>(this Il2CppObjectBase obj, Func<T, R> func)
     {
         var enumerable = obj.TryCast<Il2CppSystem.Collections.Generic.IEnumerable<T>>();
@@ -98,6 +116,15 @@ public static class Extentions
             throw new ArgumentException($"IL2CPP Object of {obj.GetType()} cannot be enumerated!");
         }
         return enumerable.Select(Converter.C<Il2CppSystem.Func<T, R>>(func));
+    }
+    public static bool Any<T>(this Il2CppObjectBase obj, Func<T, bool> func)
+    {
+	    var enumerable = obj.TryCast<Il2CppSystem.Collections.Generic.IEnumerable<T>>();
+	    if (enumerable == null)
+	    {
+		    throw new ArgumentException($"IL2CPP Object of {obj.GetType()} cannot be enumerated!");
+	    }
+	    return enumerable.Any(Converter.C<Il2CppSystem.Func<T, bool>>(func));
     }
     #endregion
     //functions like listextention are useless to us now

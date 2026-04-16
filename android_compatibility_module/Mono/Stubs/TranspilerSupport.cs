@@ -7,7 +7,7 @@ using MonoMod.Cil;
 using NeoModLoader.constants;
 using NeoModLoader.services;
 using NeoModLoader.utils;
-
+using NeoModLoader.utils.Lists;
 namespace NeoModLoader.AndroidCompatibilityModule.TranspilerSupport;
 
 /// <summary>

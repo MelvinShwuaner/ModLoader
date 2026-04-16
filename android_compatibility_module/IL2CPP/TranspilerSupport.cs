@@ -32,7 +32,7 @@ public class MirrorData
     internal MirrorData(Delegate method, List<MethodInfo> transpilers)
     {
         Method = method;
-        Transpilers = new SortedList<MethodInfo>(HarmonyUtils.SortByPriority, transpilers);
+        Transpilers = new SortedSet<MethodInfo>(transpilers);
     }
 
     private MirrorData()
@@ -40,14 +40,14 @@ public class MirrorData
     }
 
     public readonly Delegate Method;
-    internal readonly SortedList<MethodInfo> Transpilers;
+    internal readonly SortedSet<MethodInfo> Transpilers;
 
     /// <summary>
     /// gets all transpilers applied to this Mirror
     /// </summary>
     public List<MethodInfo> GetTranspilers()
     {
-        return Transpilers.GetList();
+        return new List<MethodInfo>(Transpilers);
     }
 }
 
@@ -135,7 +135,7 @@ public static class TranspilerSupport
         else
         {
             data.Transpilers.Add(transpiler);
-            MirroredAssemblies.Mirrors[original] = MirroredAssemblies.Generator.GenerateMirror(original, data.Transpilers.GetList());
+            MirroredAssemblies.Mirrors[original] = MirroredAssemblies.Generator.GenerateMirror(original, data.GetTranspilers());
             transpiler = null;
         }
     }

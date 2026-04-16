@@ -3,6 +3,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using NeoModLoader.AndroidCompatibilityModule;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 public class ObjectPoolGenericMono<T> where T : WrappedBehaviour
 {
@@ -157,6 +158,12 @@ public static class WrapperHelper
 	{ 
 		GameObject newobj = UnityEngine.Object.Instantiate(original, parent, worldPositionStays);
 		WrapperResolver.ResolveInstantiate(original, newobj);
+		return newobj;
+	}
+	public static T Instantiate<T>(T original, Transform parent, bool worldPositionStays = true, bool stub = false) where T : Component
+	{ 
+		T newobj = UnityEngine.Object.Instantiate(original, parent, worldPositionStays);
+		WrapperResolver.ResolveInstantiate(original.gameObject, newobj.gameObject);
 		return newobj;
 	}
 	public static object GetWrappedComponent(GameObject Object, Type WrappedType)

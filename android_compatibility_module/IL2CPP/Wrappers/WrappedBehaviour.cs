@@ -73,6 +73,10 @@ public class WrappedBehaviour
     {
         return Wrapper.StartCoroutine(enumerator.ToIL2CPP());
     }
+    public void StopCoroutine(Coroutine coroutine)
+    {
+        Wrapper.StopCoroutine(coroutine);
+    }
     public void StopAllCoroutines(){
         Wrapper.StopAllCoroutines();
     }

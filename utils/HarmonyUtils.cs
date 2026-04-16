@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
@@ -227,7 +228,7 @@ public static class HarmonyUtils
         }).ToArray();
         return (IEnumerable<CodeInstruction>)Transpiler.Invoke(null, args);
     }
-    public static readonly Comparison<MethodInfo> SortByPriority = (method1, method2) => method1.GetPriority().CompareTo(method2.GetPriority());
+    
     public static int GetPriority(this MethodInfo Method)
     {
         var priority = Method.GetCustomAttribute<HarmonyPriority>() ?? Method.DeclaringType?.GetCustomAttribute<HarmonyPriority>();
