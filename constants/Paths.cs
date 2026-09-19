@@ -26,14 +26,14 @@ public static class Paths
     /// <summary>
     /// Path to game native Mods folder
     /// </summary>
-    public static readonly string NativeModsPath = Combine(StreamingAssetsPath, "mods");
+    public static readonly string NativeModsPath = Config.isAndroid ? Combine(PersistentDataPath, "mods") : Combine(StreamingAssetsPath, "mods");
 
     /// <summary>
     /// Path to game native Managed folder
     /// </summary>
     public static readonly string ManagedPath = Others.is_editor
         ? Combine(StreamingAssetsPath, "..", ".Managed")
-        : Combine(StreamingAssetsPath, "..", "Managed");
+        : Config.isAndroid ? Combine(PersistentDataPath, "mono") :Combine(StreamingAssetsPath, "..", "Managed");
 
     /// <summary>
     /// Path to folder contains NML's cache
@@ -174,6 +174,7 @@ public static class Paths
         RuntimePlatform.WindowsPlayer => Combine(StreamingAssetsPath, "..", ".."),
         RuntimePlatform.LinuxPlayer   => Combine(StreamingAssetsPath, "..", ".."),
         RuntimePlatform.OSXPlayer     => Combine(StreamingAssetsPath, "..", "..", "..", "..", ".."),
+        RuntimePlatform.Android => Combine(PersistentDataPath, ".."),
         _                             => Combine(StreamingAssetsPath, "..", "..")
     };
 
