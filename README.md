@@ -52,11 +52,11 @@ It is recommended to subscribe to the NML item on the Steam Workshop to receive 
 
 ### Android Installation
 
-Driven by the [Android Version Repository](https://github.com/MelvinShwuaner/ModLoader/)
+1. Download and install the mono version of worldbox
 
-1. Download the latest version of lemon loader https://gamebanana.com/mods/656702
-follow instructions there on how to install.
-2. Move neomodloader_mobile.dll to MelonLoader/com.mkarpenko.worldbox/Mods
+2. Move NeoModLoader.dll to Android/data/com.mkarpenko.worldbox/mods
+3. 
+4. enable experimental mode and start the game
 
 <h2 align="center">Others</h2>
 <h3 align="center">
