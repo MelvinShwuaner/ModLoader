@@ -53,10 +53,8 @@ It is recommended to subscribe to the NML item on the Steam Workshop to receive 
 ### Android Installation
 
 1. Download and install the mono version of worldbox
-
 2. Move NeoModLoader.dll to Android/data/com.mkarpenko.worldbox/mods
-3. 
-4. enable experimental mode and start the game
+3. enable experimental mode and start the game
 
 <h2 align="center">Others</h2>
 <h3 align="center">
