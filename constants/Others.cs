@@ -12,6 +12,14 @@ public static class Others
     /// Determine whether the game is running on unity player. (Editor included). For unit test.
     /// </summary>
     public static bool unity_player_enabled { get; internal set; } = false;
+
+    public static bool IsAndroid
+    {
+        get
+        {
+            return Application.platform ==  RuntimePlatform.Android;
+        }
+    }
     /// <summary>
     /// Check whether the game is running on unity editor. For NeoModSDK
     /// </summary>
