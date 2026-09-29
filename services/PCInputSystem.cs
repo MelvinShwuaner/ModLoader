@@ -919,21 +919,20 @@ public class PCInputSystem : MonoBehaviour
                 return;
             }
             SelectedInput.SetSize(new Vector2(currentX, currentY));
-          //  SelectedInput.Name = GUILayout.TextField(SelectedInput.Name, TextStyle); text field currently not supported
+            SelectedInput.Name = GUILayout.TextField(SelectedInput.Name);
             if (pendingKey == KeyCode.None) return;
             var old = GetKey(SelectedInput);
             if (old == pendingKey || old == default) return;
             Config.Inputs.Remove(old);
             Config.Inputs[pendingKey] = SelectedInput;
-            SelectedInput.Name = pendingKey.ToString();
             pendingKey = KeyCode.None;
         }
         else
         {
-           //string newname = GUILayout.TextField("New Button Name", TextStyle); text field currently not supported
+           string Name = GUILayout.TextField("New Button Name");
            if (GUILayout.Button("Create New Button") && pendingKey != KeyCode.None)
            {
-               SelectedInput = CreateNewButton(pendingKey.ToString(), pendingKey, GetNextButtonRect(new Vector2(currentX, currentY)));
+               SelectedInput = CreateNewButton(Name, pendingKey, GetNextButtonRect(new Vector2(currentX, currentY)));
                pendingKey = KeyCode.None;
            }
         }
