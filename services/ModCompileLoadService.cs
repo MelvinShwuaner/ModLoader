@@ -402,7 +402,7 @@ public static class ModCompileLoadService
         ResourcesPatch.LoadResourceFromFolder(Path.Combine(pModDeclare.FolderPath,
             Paths.NCMSAdditionModResourceFolderName), linker);
         ResourcesPatch.LoadAssetBundlesFromFolder(Path.Combine(pModDeclare.FolderPath, Paths.ModAssetBundleFolderName));
-
+        ResourcesPatch.LoadNativeLibrariesFromFolder(Path.Combine(pModDeclare.FolderPath, Paths.NativeLibrariesFolder));
         LoadMod(pModDeclare);
      
         linker.AddAssets();

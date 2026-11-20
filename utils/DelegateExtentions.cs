@@ -44,7 +44,7 @@ namespace NeoModLoader.utils
         /// <exception cref="ArgumentException">if the delegatetype is null and the string doesnt include the type</exception>
         public static Delegate AsDelegate(this string String, Type DelegateType = null)
         {
-            if(String?.Contains("&") ?? throw new ArgumentNullException("The String is null!"))
+            if(String?.Contains("&") ?? throw new ArgumentNullException(nameof(String)))
             {
                 string[] TypeAndDelegate = String.Split('&');
                 DelegateType ??= Type.GetType(TypeAndDelegate[0]);
@@ -70,7 +70,7 @@ namespace NeoModLoader.utils
         /// <exception cref="ArgumentNullException">if Delegate is null</exception>
         public static string AsString(this Delegate pDelegate, bool IncludeType = false)
         {
-            Delegate[] Delegates = pDelegate?.GetInvocationList() ?? throw new ArgumentNullException("The Delegate is null!");
+            Delegate[] Delegates = pDelegate?.GetInvocationList() ?? throw new ArgumentNullException(nameof(pDelegate));
             string[] MethodPaths = new string[Delegates.Length];
             for (int i = 0; i < Delegates.Length; i++)
             {
